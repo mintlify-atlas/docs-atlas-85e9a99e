@@ -1,0 +1,536 @@
+---
+title: Troubleshooting & Debugging
+description: Common issues, debugging tools, system logs, and solutions for Maestro problems.
+---
+
+## Quick Diagnostics
+
+Before diving into specific issues, use Maestro's built-in diagnostic tools:
+
+<Steps>
+  <Step title="System Logs">
+    Press `Opt+Cmd+L` (Mac) / `Alt+Ctrl+L` (Windows/Linux) to view system logs with:
+    
+    - Timestamped entries with severity levels
+    - Filterable by log level (debug, info, warn, error)
+    - Real-time updates as issues occur
+    - Detail view with full message content
+  </Step>
+
+  <Step title="Process Monitor">
+    Press `Opt+Cmd+P` (Mac) / `Alt+Ctrl+P` (Windows/Linux) to view:
+    
+    - All running agent processes
+    - PIDs, runtimes, working directories
+    - Group Chat moderator and participant processes
+    - Process health and status
+  </Step>
+
+  <Step title="Debug Package">
+    Press `Cmd+K` / `Ctrl+K` → "Create Debug Package" to generate:
+    
+    - System info (OS, CPU, memory, versions)
+    - Settings (with sensitive data redacted)
+    - Agent configurations and availability
+    - Process information
+    - Recent logs and errors
+  </Step>
+</Steps>
+
+## Common Issues
+
+### Agent Not Detected
+
+**Symptom:** Provider doesn't appear in agent creation dropdown.
+
+<Accordion title="Solution: Verify installation">
+  ```bash
+  # Check if binary is in PATH
+  which claude      # Claude Code
+  which opencode    # OpenCode
+  which codex       # Codex
+  which droid       # Factory Droid
+  
+  # If not found, install the provider
+  npm install -g @anthropic-ai/claude-code
+  ```
+</Accordion>
+
+<Accordion title="Solution: Set custom path">
+  1. Open **Settings** → **General** (or **Providers**)
+  2. Find the provider section
+  3. Click **Set Custom Path**
+  4. Browse to the binary location
+  5. Click **Save**
+  6. Restart Maestro
+</Accordion>
+
+<Accordion title="Solution: Refresh detection">
+  **Settings → General → Check for Updates** forces re-detection of all providers.
+</Accordion>
+
+### Authentication Errors
+
+**Symptom:** Agent fails with "Authentication Required" or "Invalid API Key".
+
+<CodeGroup>
+```bash Claude Code
+# Configure API key interactively
+claude config
+
+# Or set environment variable
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+```bash OpenCode
+# Set via environment variable
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Or via Maestro Settings → Providers → OpenCode → Environment Variables
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+```bash Codex
+# Authenticate via CLI
+codex login
+
+# Or set environment variable
+export OPENAI_API_KEY=sk-proj-...
+```
+</CodeGroup>
+
+<Warning>
+API keys set via Maestro's environment variables take precedence over system environment variables.
+</Warning>
+
+### Context Limit Reached
+
+**Symptom:** Agent responds with "Context window full" or "Max tokens reached".
+
+<Steps>
+  <Step title="Use /compact (Claude Code)">
+    Type `/compact` to compress conversation history.
+  </Step>
+
+  <Step title="Export and start fresh">
+    1. Right-click messages → **Export Context**
+    2. Save important parts to a file
+    3. Start a new tab for continued work
+  </Step>
+
+  <Step title="Adjust context warnings">
+    **Settings → Display → Context Window Warnings**
+    
+    - Set warning threshold (e.g., 80%)
+    - Get notified before hitting the limit
+  </Step>
+</Steps>
+
+### Agent Process Hangs
+
+**Symptom:** Agent shows "busy" state indefinitely, no output.
+
+<Accordion title="Solution: Kill process">
+  1. Press `Opt+Cmd+P` (Mac) / `Alt+Ctrl+P` (Windows/Linux)
+  2. Select the hung process
+  3. Press `K` or `Delete` to kill it
+  4. Send a new message to restart the agent
+</Accordion>
+
+<Accordion title="Solution: Check system logs">
+  1. Press `Opt+Cmd+L` (Mac) / `Alt+Ctrl+L` (Windows/Linux)
+  2. Filter by **error** level
+  3. Look for stderr output or exit codes
+  4. Address the root cause (missing dependency, permission issue, etc.)
+</Accordion>
+
+### Auto Run Not Starting
+
+**Symptom:** Click "Run" but Auto Run doesn't start.
+
+<Accordion title="Solution: Verify documents">
+  - Ensure documents exist in the Auto Run folder
+  - Check that documents have unchecked checkboxes: `- [ ]`
+  - Verify folder path is correct (not a symbolic link)
+</Accordion>
+
+<Accordion title="Solution: Check permissions">
+  ```bash
+  # Ensure Auto Run folder is writable
+  ls -la /path/to/autorun/folder
+  
+  # Fix permissions if needed
+  chmod -R u+rw /path/to/autorun/folder
+  ```
+</Accordion>
+
+<Accordion title="Solution: Review playbook config">
+  If loading a playbook:
+  
+  - Ensure all referenced documents exist
+  - Check that document filenames match exactly (case-sensitive)
+  - Verify loop settings (maxLoops should be null or positive integer)
+</Accordion>
+
+### Worktree Creation Fails
+
+**Symptom:** Auto Run with worktree fails to create branch/directory.
+
+<Accordion title="Solution: Verify git repository">
+  ```bash
+  # Check if directory is a git repo
+  cd /path/to/project
+  git status
+  
+  # Initialize if needed
+  git init
+  git commit --allow-empty -m "Initial commit"
+  ```
+</Accordion>
+
+<Accordion title="Solution: Check branch name">
+  - Branch names cannot contain spaces
+  - Avoid special characters except `-`, `_`, `/`
+  - Ensure branch doesn't already exist: `git branch -a`
+</Accordion>
+
+<Accordion title="Solution: Verify permissions">
+  ```bash
+  # Ensure project directory is writable
+  ls -la /path/to/project
+  
+  # Check existing worktrees
+  git worktree list
+  
+  # Remove stale worktrees if needed
+  git worktree prune
+  ```
+</Accordion>
+
+### SSH Remote Connection Fails
+
+**Symptom:** Remote agent creation fails with "Connection refused" or timeout.
+
+<Accordion title="Solution: Test SSH connection">
+  ```bash
+  # Test connection manually
+  ssh username@hostname -p 22
+  
+  # If using SSH config
+  ssh config-host-name
+  
+  # Test with verbose output
+  ssh -v username@hostname
+  ```
+</Accordion>
+
+<Accordion title="Solution: Verify SSH config">
+  If using SSH config import:
+  
+  ```bash
+  # Check ~/.ssh/config
+  cat ~/.ssh/config
+  
+  # Ensure Host pattern matches
+  Host dev-server
+      HostName 192.168.1.100
+      User developer
+      IdentityFile ~/.ssh/dev_key
+      Port 2222
+  ```
+</Accordion>
+
+<Accordion title="Solution: Check firewall">
+  - Ensure SSH port is open on remote host
+  - Verify firewall rules allow incoming SSH
+  - Test from another machine to isolate network issues
+</Accordion>
+
+### Image Attachments Not Working
+
+**Symptom:** Image button is disabled or images don't appear in agent output.
+
+<Accordion title="Solution: Check provider support">
+  | Provider   | New Session | Resume Session |
+  |------------|-------------|----------------|
+  | Claude Code| ✅          | ✅             |
+  | OpenCode   | ✅          | ✅             |
+  | Codex      | ✅          | ❌             |
+  
+  Codex doesn't support images on resume—start a new tab for image input.
+</Accordion>
+
+<Accordion title="Solution: Verify file format">
+  Supported formats: PNG, JPEG, GIF, WebP
+  
+  Maximum size: 5MB (provider-dependent)
+</Accordion>
+
+### Slash Commands Not Showing
+
+**Symptom:** Typing `/` doesn't show autocomplete menu.
+
+<Accordion title="Solution: Check agent type">
+  Native slash commands are only available for Claude Code in batch mode.
+  
+  See [Slash Commands](/slash-commands#agent-native-commands) for supported commands.
+</Accordion>
+
+<Accordion title="Solution: Verify custom commands">
+  1. Open **Settings → AI Commands**
+  2. Ensure commands are saved
+  3. Check trigger starts with `/`
+  4. Verify no duplicate triggers
+</Accordion>
+
+## Platform-Specific Issues
+
+### Windows
+
+<Accordion title="PATH not recognized">
+  Ensure provider binary is in Windows PATH:
+  
+  1. Search "Environment Variables" in Start menu
+  2. Edit System PATH variable
+  3. Add directory containing provider binary
+  4. Restart Maestro
+</Accordion>
+
+<Accordion title="Execution policy errors">
+  ```powershell
+  # Allow script execution
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
+</Accordion>
+
+### macOS
+
+<Accordion title="Permission denied errors">
+  ```bash
+  # Grant execute permission to binary
+  chmod +x /usr/local/bin/claude
+  
+  # If installed via npm, may need to reinstall with proper permissions
+  sudo npm install -g @anthropic-ai/claude-code
+  ```
+</Accordion>
+
+<Accordion title="Gatekeeper warnings">
+  For unsigned binaries:
+  
+  1. System Preferences → Security & Privacy
+  2. Click "Allow" next to blocked app
+  3. Or: `xattr -d com.apple.quarantine /path/to/binary`
+</Accordion>
+
+### Linux
+
+<Accordion title="Sleep prevention doesn't work">
+  Ensure D-Bus screen saver service is running:
+  
+  ```bash
+  # Check for running screensaver daemon
+  ps aux | grep screensaver
+  
+  # Install xdg-screensaver if missing
+  sudo apt install xdg-utils
+  
+  # Or for GNOME
+  sudo apt install gnome-screensaver
+  ```
+  
+  Minimal window managers (i3, dwm, sway) may not support sleep prevention.
+</Accordion>
+
+### WSL2 (Windows Subsystem for Linux)
+
+<Accordion title="Socket binding errors">
+  **EPERM: operation not permitted**
+  
+  Move project to native Linux filesystem:
+  
+  ```bash
+  # Don't run from /mnt/c/...
+  mv /mnt/c/projects/maestro ~/maestro
+  cd ~/maestro
+  npm install
+  npm run dev
+  ```
+</Accordion>
+
+<Accordion title="Electron sandbox crash">
+  **FATAL:sandbox_host_linux.cc**
+  
+  Run from Linux filesystem (`/home/...`), not Windows-mounted paths (`/mnt/...`).
+</Accordion>
+
+<Accordion title="npm install timeouts">
+  Override temp directory:
+  
+  ```bash
+  TMPDIR=/tmp npm install
+  ```
+</Accordion>
+
+See [Troubleshooting](/troubleshooting#wsl2-issues-windows) for complete WSL2 guide.
+
+## Error Types & Recovery
+
+Maestro categorizes agent errors for appropriate recovery:
+
+| Error Type              | Cause                           | Recovery                           |
+| ----------------------- | ------------------------------- | ---------------------------------- |
+| **Authentication**      | Invalid/expired API key         | Re-authenticate, check credentials |
+| **Token Exhaustion**    | Context window full             | Compact, export, or start fresh    |
+| **Rate Limited**        | Too many requests               | Wait and retry                     |
+| **Network Error**       | Connection failed               | Check internet, retry              |
+| **Agent Crashed**       | Process exited unexpectedly     | Restart agent, check logs          |
+| **Permission Denied**   | File/operation access blocked   | Check permissions                  |
+| **Session Not Found**   | Session deleted or invalid      | Start new session                  |
+
+Each error modal provides context-specific recovery buttons.
+
+## Debug Mode
+
+### Enable Verbose Logging
+
+<Steps>
+  <Step title="Set log level">
+    **Settings → Display → System Log Level → Debug**
+  </Step>
+
+  <Step title="View system logs">
+    Press `Opt+Cmd+L` (Mac) / `Alt+Ctrl+L` (Windows/Linux)
+  </Step>
+
+  <Step title="Filter and search">
+    - Click log level pills to filter (debug, info, warn, error)
+    - Use `Cmd+F` / `Ctrl+F` to search logs
+    - Click entries for full detail view
+  </Step>
+</Steps>
+
+### Provider Debug Output
+
+Enable debug output in provider-specific environment variables:
+
+```bash
+# Claude Code debug output
+CLAUDE_DEBUG=1
+
+# Generic debug flag
+DEBUG=*
+
+# Maestro-specific debug
+DEBUG=maestro:*
+```
+
+Set these in **Settings → Providers → [Provider] → Environment Variables**.
+
+## Reporting Issues
+
+### Creating a Debug Package
+
+<Steps>
+  <Step title="Generate package">
+    1. Press `Cmd+K` (Mac) / `Ctrl+K` (Windows/Linux)
+    2. Search "Create Debug Package"
+    3. Choose what to include:
+       - System info (always included)
+       - Session metadata (optional)
+       - Logs (optional)
+       - Errors (optional)
+    4. Choose save location
+  </Step>
+
+  <Step title="Review contents">
+    The debug package is sanitized for privacy:
+    
+    - API keys → `[REDACTED]`
+    - Passwords → Never included
+    - Conversation content → Excluded
+    - File paths → Username replaced with `~`
+    - Environment variables → Only counts shown
+  </Step>
+
+  <Step title="Attach to issue">
+    1. Go to [GitHub Issues](https://github.com/RunMaestro/Maestro/issues)
+    2. Create new issue or comment on existing
+    3. Attach the debug package `.zip` file
+    4. Describe the problem and steps to reproduce
+  </Step>
+</Steps>
+
+### Privacy Protections
+
+Debug packages are designed to be safe to share publicly:
+
+<Note>
+**Never included:**
+- Conversation content
+- API keys or tokens
+- Passwords
+- File contents from your projects
+- Custom prompts (may contain context)
+- Environment variable values
+
+**Sanitized:**
+- File paths (username → `~`)
+- Custom arguments (shown as `[SET]` or `[NOT SET]`)
+</Note>
+
+### What to Include in Reports
+
+1. **Description**: Clear explanation of the problem
+2. **Steps to reproduce**: Exact sequence to trigger the issue
+3. **Expected behavior**: What should happen
+4. **Actual behavior**: What actually happens
+5. **Debug package**: Attach the `.zip` file
+6. **Screenshots**: Visual aids for UI issues
+7. **System info**: OS, Maestro version, provider versions
+
+## Getting Help
+
+<CardGroup cols={2}>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/RunMaestro/Maestro/issues">
+    Report bugs and request features
+  </Card>
+  
+  <Card title="Discord Community" icon="discord" href="https://runmaestro.ai/discord">
+    Get help from the community
+  </Card>
+  
+  <Card title="Documentation" icon="book" href="https://docs.runmaestro.ai">
+    Browse complete docs
+  </Card>
+  
+  <Card title="Contributing Guide" icon="code" href="https://github.com/RunMaestro/Maestro/blob/main/CONTRIBUTING.md">
+    Development setup and processes
+  </Card>
+</CardGroup>
+
+## FAQ
+
+<Accordion title="Do my MCP tools work in Maestro?">
+  Yes. Maestro calls your provider in batch mode rather than interactive mode. Whatever works when you run the provider directly will work in Maestro. MCP servers, custom skills, authentication, and tool permissions all carry over automatically.
+</Accordion>
+
+<Accordion title="What's the difference between running the provider directly vs through Maestro?">
+  The only difference is execution mode. Direct runs are interactive (you watch in real-time), while Maestro runs in batch mode (sends prompt, gets full response). This enables unattended automation and parallel agent management. Everything else—tools, permissions, context—remains identical.
+</Accordion>
+
+<Accordion title="Why can't I use /mcp or /config commands?">
+  These are interactive-only commands that require a TUI. For configuration, use the provider's CLI directly: `claude mcp` or `claude config`.
+</Accordion>
+
+<Accordion title="How do I use multiple Claude accounts?">
+  See [Multi-Claude](/multi-claude) for setting up multiple accounts with different API keys.
+</Accordion>
+
+## Related Documentation
+
+- [Troubleshooting & Support](/troubleshooting) - Complete troubleshooting guide
+- [System Logs](/troubleshooting#system-logs) - Log viewer reference
+- [Process Monitor](/troubleshooting#process-monitor) - Process management
+- [WSL2 Issues](/troubleshooting#wsl2-issues-windows) - Windows-specific guidance
+- [Provider Notes](/provider-notes) - Provider-specific limitations

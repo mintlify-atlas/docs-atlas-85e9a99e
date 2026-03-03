@@ -1,0 +1,440 @@
+---
+title: "Usage Dashboard"
+description: "Visualize AI usage patterns with interactive charts and analytics"
+---
+
+## Overview
+
+The Usage Dashboard provides comprehensive analytics for your AI usage across all agents, with interactive charts powered by Recharts and real-time updates.
+
+<Info>
+  Track queries, costs, efficiency, and patterns over time with a responsive, keyboard-accessible interface.
+</Info>
+
+## Opening the Dashboard
+
+Access via keyboard shortcut or menu:
+
+```bash
+Keyboard: Cmd+Shift+U (macOS) / Ctrl+Shift+U (Windows/Linux)
+Menu: View → Usage Dashboard
+```
+
+## View Modes
+
+The dashboard has four focused views:
+
+<Tabs>
+  <Tab title="Overview">
+    High-level summary with:
+    - Summary cards (total queries, duration, avg per query)
+    - Agent comparison chart
+    - Session type distribution
+    - Location distribution
+    - Peak hours activity
+    - Activity heatmap
+    - Duration trends
+  </Tab>
+  
+  <Tab title="Agents">
+    Agent-focused analytics:
+    - Agent statistics table
+    - Agent efficiency comparison
+    - Provider comparison
+    - Agent usage over time
+  </Tab>
+  
+  <Tab title="Activity">
+    Temporal patterns:
+    - Activity heatmap
+    - Weekday vs weekend comparison
+    - Duration trends by day
+  </Tab>
+  
+  <Tab title="Auto Run">
+    Auto Run-specific metrics:
+    - Auto Run statistics
+    - Tasks by time of day
+    - Top 25 longest Auto Runs
+  </Tab>
+</Tabs>
+
+### Tab Navigation
+
+```typescript
+// Keyboard shortcuts
+Cmd+Shift+[ - Previous tab
+Cmd+Shift+] - Next tab
+Arrow keys  - Navigate when tabs focused
+```
+
+## Time Range Filter
+
+Filter data by time period:
+
+| Range | Description |
+|-------|-------------|
+| Today | Current day's activity |
+| This Week | Last 7 days |
+| This Month | Last 30 days |
+| This Quarter | Last 90 days |
+| This Year | Last 365 days |
+| All Time | Complete history |
+
+```typescript
+type StatsTimeRange = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all'
+```
+
+## Charts & Visualizations
+
+### Summary Cards
+
+Key metrics at a glance:
+
+<CodeGroup>
+```typescript Total Queries
+{
+  title: 'Total Queries'
+  value: 1234
+  icon: MessageSquare
+  color: accent
+}
+```
+
+```typescript Total Duration
+{
+  title: 'Total Duration'
+  value: '2h 15m'
+  icon: Clock
+  color: accent
+}
+```
+
+```typescript Average Duration
+{
+  title: 'Avg per Query'
+  value: '6.5s'
+  icon: TrendingUp
+  color: accent  
+}
+```
+</CodeGroup>
+
+### Activity Heatmap
+
+Day-by-hour activity visualization:
+
+```typescript
+interface HeatmapCell {
+  day: string      // Day of week
+  hour: number     // 0-23
+  count: number    // Query count
+  intensity: 0-1   // Normalized for color
+}
+```
+
+**Features:**
+- 7 rows (days of week) × 24 columns (hours)
+- Color intensity based on activity
+- Hover for exact counts
+- Click to filter detail views
+
+### Agent Comparison
+
+Horizontal bar chart comparing providers:
+
+```typescript
+interface AgentComparisonData {
+  provider: string       // claude-code, codex, etc.
+  count: number         // Query count
+  duration: number      // Total duration (ms)
+  avgDuration: number   // Average duration (ms)
+}
+```
+
+**Features:**
+- Stacked bars (count + duration)
+- Colorblind-friendly palette option
+- Legend with click-to-filter
+- Responsive breakpoints
+
+### Source Distribution
+
+Pie chart showing user vs Auto Run queries:
+
+```typescript
+interface SourceData {
+  source: 'User' | 'Auto Run'
+  count: number
+  percentage: number
+}
+```
+
+**Features:**
+- Donut chart with center label
+- Hover highlights
+- Click to drill down
+
+### Peak Hours
+
+Bar chart of queries by hour:
+
+```typescript
+interface PeakHourData {
+  hour: number        // 0-23
+  count: number       // Query count
+  label: string       // "12 AM", "1 PM", etc.
+}
+```
+
+**Features:**
+- 24-hour breakdown
+- Highlights peak hour
+- Responsive layout
+
+### Duration Trends
+
+Line chart showing duration patterns over time:
+
+```typescript
+interface DurationTrendData {
+  date: string          // YYYY-MM-DD
+  avgDuration: number   // Average duration (ms)
+  count: number         // Query count
+}
+```
+
+**Features:**
+- Dual-axis (duration + count)
+- Moving average option
+- Zoom and pan support
+
+### Agent Usage Chart
+
+Stacked area chart of agent activity over time:
+
+```typescript
+interface AgentUsageData {
+  date: string
+  [sessionId: string]: number  // Query count per agent
+}
+```
+
+**Features:**
+- Per-agent breakdown
+- Stack visualization
+- Agent color consistency
+- Legend filtering
+
+### Auto Run Statistics
+
+Grid of Auto Run-specific metrics:
+
+<CodeGroup>
+```typescript Task Metrics
+- Total tasks completed
+- Tasks per run (avg)
+- Completion rate
+```
+
+```typescript Performance
+- Average run duration
+- Longest run
+- Success rate
+```
+
+```typescript Timing
+- Peak Auto Run hours
+- Weekend vs weekday
+- Most active day
+```
+</CodeGroup>
+
+## Data Aggregation
+
+Dashboard queries a SQLite database with indexed queries:
+
+```typescript
+interface StatsAggregation {
+  totalQueries: number
+  totalDuration: number
+  avgDuration: number
+  byAgent: Record<string, { count: number; duration: number }>
+  bySource: { user: number; auto: number }
+  byLocation: { local: number; remote: number }
+  byDay: Array<{ date: string; count: number; duration: number }>
+  byHour: Array<{ hour: number; count: number; duration: number }>
+  totalSessions: number
+  sessionsByAgent: Record<string, number>
+  avgSessionDuration: number
+}
+```
+
+### Real-Time Updates
+
+Dashboard auto-refreshes on new data:
+
+```typescript
+// Subscribe to stats updates
+const unsubscribe = window.maestro.stats.onStatsUpdate(() => {
+  // Debounced refresh (1 second)
+  fetchStats(true)  // isRealTimeUpdate = true
+})
+
+// Show "Updated" indicator briefly
+setShowNewDataIndicator(true)
+setTimeout(() => setShowNewDataIndicator(false), 3000)
+```
+
+## Export
+
+Export raw data to CSV:
+
+```typescript
+// Export for selected time range
+const csv = await window.maestro.stats.exportCsv(timeRange)
+
+// CSV format:
+// timestamp,agent_id,agent_name,provider,duration_ms,source,location,session_id
+// 2024-01-15T10:30:00Z,abc123,My Agent,claude-code,1250,user,local,xyz789
+// ...
+```
+
+**Use cases:**
+- Import to Excel/Sheets
+- Custom analysis in Python/R
+- Long-term archival
+- Compliance reporting
+
+## Keyboard Navigation
+
+Fully keyboard accessible:
+
+<Steps>
+  <Step title="Focus Tabs">
+    Tab key focuses view mode tabs
+  </Step>
+  
+  <Step title="Switch Views">
+    Arrow keys navigate between tabs
+  </Step>
+  
+  <Step title="Enter Content">
+    Tab key moves into chart sections
+  </Step>
+  
+  <Step title="Navigate Charts">
+    Arrow keys move between sections
+    
+    Home/End jump to first/last
+  </Step>
+</Steps>
+
+```typescript
+// Section navigation
+interface SectionNavigation {
+  ArrowUp: () => void      // Previous section
+  ArrowDown: () => void    // Next section  
+  Home: () => void         // First section
+  End: () => void          // Last section
+  Tab: () => void          // Focus next section
+}
+```
+
+## Colorblind Mode
+
+Accessible color palettes:
+
+```typescript
+// Enable in Settings → Accessibility
+colorBlindMode: boolean
+
+// Uses deuteranopia-friendly colors:
+- Blue (#0066CC)
+- Orange (#FF6600)  
+- Yellow (#FFCC00)
+- Purple (#9933CC)
+```
+
+<Note>
+  Colorblind mode is automatically applied to all charts when enabled in settings.
+</Note>
+
+## Performance
+
+Optimized for large datasets:
+
+### Query Performance
+
+```typescript
+// Indexed database queries
+CREATE INDEX idx_stats_timestamp ON ai_stats(timestamp)
+CREATE INDEX idx_stats_agent ON ai_stats(agent_id)
+CREATE INDEX idx_stats_source ON ai_stats(source)
+
+// Typical query times:
+// - Day range: <10ms
+// - Week range: <50ms
+// - Month range: <200ms  
+// - All time: <500ms
+```
+
+### Render Performance
+
+```typescript
+// Virtual scrolling for long tables
+// Debounced chart rebuilds (300ms)
+// Memoized expensive calculations
+// ResizeObserver for responsive charts
+
+// Performance thresholds
+const PERFORMANCE_THRESHOLDS = {
+  DASHBOARD_LOAD: 1000,      // Max initial load time
+  CHART_RENDER: 500,         // Max chart render time
+  INTERACTION_RESPONSE: 100   // Max UI response time
+}
+```
+
+### Memory Management
+
+```typescript
+// Cleanup on unmount
+useEffect(() => {
+  return () => {
+    unsubscribe()           // Stop stats updates
+    clearTimeout(timers)    // Clear debounce timers
+    resizeObserver.disconnect()  // Stop resize observer
+  }
+}, [])
+```
+
+## Database Size
+
+Monitor storage usage in footer:
+
+```typescript
+// Display database size
+const dbSize = await window.maestro.stats.getDatabaseSize()
+
+formatDatabaseSize(dbSize)
+// "1.5 MB" or "125 KB"
+```
+
+## Beta Features
+
+Dashboard is marked as Beta:
+
+```typescript
+<span className="beta-badge">Beta</span>
+```
+
+**Limitations:**
+- Some data may be incomplete for older sessions
+- Chart types may change based on feedback
+- Export format subject to refinement
+
+## Related Features
+
+- [Document Graph](/analytics/document-graph) - Visualize document relationships
+- [History Panel](/features/history) - View individual session history
+- [Auto Run](/power/auto-run-playbooks) - Auto Run analytics source

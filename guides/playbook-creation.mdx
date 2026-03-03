@@ -1,0 +1,317 @@
+---
+title: Creating Custom Playbooks
+description: Learn how to create, configure, and share reusable Auto Run playbooks for automated AI workflows.
+---
+
+## What are Playbooks?
+
+Playbooks are reusable Auto Run configurations that define a sequence of markdown documents with tasks for AI agents to execute. They enable you to:
+
+- Automate repetitive workflows across projects
+- Create looping task sequences for continuous integration
+- Share workflows with your team
+- Build complex multi-document automation pipelines
+
+## Playbook Structure
+
+A playbook consists of:
+
+<Steps>
+  <Step title="Document Queue">
+    An ordered list of markdown files containing task checkboxes
+  </Step>
+  <Step title="Configuration">
+    Settings like loop mode, reset behavior, and prompt templates
+  </Step>
+  <Step title="Worktree Settings">
+    Optional git worktree integration for isolated execution
+  </Step>
+</Steps>
+
+### Playbook Data Model
+
+Playbooks are stored as JSON files in `~/.config/maestro/playbooks/` (or equivalent on your platform):
+
+```typescript
+interface Playbook {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  documents: PlaybookDocumentEntry[];
+  loopEnabled: boolean;
+  maxLoops?: number | null;
+  prompt: string;
+  worktreeSettings?: {
+    branchNameTemplate: string;
+    createPROnCompletion: boolean;
+    prTargetBranch?: string;
+  };
+}
+
+interface PlaybookDocumentEntry {
+  filename: string;
+  resetOnCompletion: boolean;
+}
+```
+
+## Creating a Basic Playbook
+
+<Steps>
+  <Step title="Create task documents">
+    Create markdown files with checkboxes in your Auto Run folder:
+
+    ```markdown
+    # Feature Implementation
+
+    - [ ] Implement user authentication
+    - [ ] Add unit tests for login flow
+    - [ ] Update API documentation
+    ```
+
+    <Tip>
+    Press `Cmd+L` (Mac) or `Ctrl+L` (Windows/Linux) to quickly insert checkboxes.
+    </Tip>
+  </Step>
+
+  <Step title="Configure the run">
+    1. Open the **Auto Run** tab (`Cmd+Shift+1`)
+    2. Click **Run** to open the configuration modal
+    3. Click **+ Add Docs** to add documents to the queue
+    4. Drag documents to reorder them
+    5. Configure per-document options:
+       - **Reset on Completion** - Creates working copies instead of modifying originals
+       - **Duplicate** - Add the same document multiple times
+  </Step>
+
+  <Step title="Save as playbook">
+    1. Click **Save as Playbook**
+    2. Enter a descriptive name (e.g., "Security Audit Workflow")
+    3. The playbook is saved and appears in the **Load Playbook** dropdown
+  </Step>
+</Steps>
+
+## Playbook Configuration Options
+
+### Loop Mode
+
+Enable **Loop Mode** to cycle back to the first document after completing the last one:
+
+```markdown
+# Continuous Integration Loop
+
+- [ ] Run test suite
+- [ ] Check for security vulnerabilities
+- [ ] Update dependency versions
+- [ ] Commit changes if tests pass
+```
+
+With loop mode enabled, this playbook runs indefinitely until you stop it.
+
+<CodeGroup>
+```json Loop Enabled
+{
+  "loopEnabled": true,
+  "maxLoops": null  // Run forever
+}
+```
+
+```json Limited Loops
+{
+  "loopEnabled": true,
+  "maxLoops": 5  // Run 5 iterations then stop
+}
+```
+</CodeGroup>
+
+### Reset on Completion
+
+When enabled for a document:
+
+- Creates a working copy in `Runs/` subfolder
+- Original document is never modified
+- Working copies serve as audit logs (e.g., `TASK-1735192800000-loop-1.md`)
+- Critical for looping playbooks to maintain clean state each iteration
+
+<Info>
+Each task executes in a completely fresh AI session with its own unique session ID. No conversation history bleeds between tasks, ensuring predictable behavior across loop iterations.
+</Info>
+
+### Custom Prompts
+
+The prompt is prepended to each task when sent to the AI agent. Use template variables for dynamic content:
+
+```markdown
+You are working on {{AGENT_PATH}} as part of the {{PLAYBOOK_NAME}} workflow.
+Current date: {{DATE}}
+Git branch: {{GIT_BRANCH}}
+
+Complete the following task:
+```
+
+See [Slash Commands](/slash-commands) for all available template variables.
+
+## Advanced Patterns
+
+### Multi-Phase Workflows
+
+Organize documents by phase for complex projects:
+
+```
+auto-run-docs/
+├── 01-planning.md
+├── 02-implementation.md
+├── 03-testing.md
+├── 04-documentation.md
+└── 05-deployment.md
+```
+
+Configure the playbook to run these sequentially, with reset enabled on all documents for audit trails.
+
+### Worktree Integration
+
+Dispatch playbooks to git worktrees for isolated execution:
+
+<Steps>
+  <Step title="Enable worktree mode">
+    In the run configuration modal, toggle **Dispatch to a separate worktree**
+  </Step>
+  <Step title="Configure worktree">
+    - **Base Branch**: Branch to base the worktree on (e.g., `main`)
+    - **Worktree Branch Name**: Name for the new branch
+    - **Automatically create PR**: Opens a PR when the run completes
+  </Step>
+  <Step title="Save in playbook">
+    Worktree settings are saved in the playbook's `worktreeSettings` field
+  </Step>
+</Steps>
+
+```json Example Worktree Settings
+{
+  "worktreeSettings": {
+    "branchNameTemplate": "autorun/{{DATE}}-security-audit",
+    "createPROnCompletion": true,
+    "prTargetBranch": "main"
+  }
+}
+```
+
+<Warning>
+Worktree playbooks require your project to be a git repository with at least one commit.
+</Warning>
+
+## Playbook Management
+
+### Loading Playbooks
+
+1. Open the Auto Run panel
+2. Click the **Load Playbook** dropdown
+3. Select a saved playbook
+4. Configuration is loaded (documents, loop settings, prompt)
+
+### Updating Playbooks
+
+After loading a playbook:
+
+1. Modify documents, order, or settings
+2. Click **Update Playbook** to save changes
+3. Or click **Discard Changes** to revert to saved version
+
+### Sharing Playbooks
+
+Playbooks are stored per-session in:
+
+```bash
+# macOS
+~/Library/Application Support/maestro/playbooks/<session-id>.json
+
+# Linux
+~/.config/maestro/playbooks/<session-id>.json
+
+# Windows
+%APPDATA%/maestro/playbooks/<session-id>.json
+```
+
+To share a playbook:
+
+1. Locate the playbook JSON file
+2. Copy to another agent's playbook directory
+3. Or use the [Playbook Exchange](/playbook-exchange) for community playbooks
+
+## Using the Inline Wizard
+
+Generate playbooks from conversational descriptions:
+
+<Steps>
+  <Step title="Start the wizard">
+    Type `/wizard` in any AI tab or click the Wizard button in Auto Run
+  </Step>
+  <Step title="Describe your project">
+    Have a natural conversation about your goals:
+    
+    > "I want to build a REST API for user management with authentication, CRUD operations, and rate limiting."
+  </Step>
+  <Step title="Build confidence">
+    Watch the confidence gauge build as the AI understands requirements (80%+ triggers generation)
+  </Step>
+  <Step title="Generate documents">
+    The AI creates detailed Auto Run documents in a subfolder under your Auto Run folder
+  </Step>
+</Steps>
+
+The wizard uses these system prompts:
+
+- `src/prompts/wizard-inline-new.md` - Initial conversation
+- `src/prompts/wizard-inline-iterate.md` - Refining requirements
+- `src/prompts/wizard-document-generation.md` - Document creation
+
+## Playbook Best Practices
+
+<Accordion title="Keep tasks atomic">
+  Each checkbox should be a single, verifiable action. Avoid compound tasks like "Implement authentication and add tests" — split into two checkboxes.
+</Accordion>
+
+<Accordion title="Use descriptive names">
+  Name playbooks clearly: "Weekly Security Audit" instead of "Audit" or "Security Workflow v2" instead of "v2".
+</Accordion>
+
+<Accordion title="Enable reset for loops">
+  Always use Reset on Completion for documents in looping playbooks to maintain clean state.
+</Accordion>
+
+<Accordion title="Test before looping">
+  Run a playbook once in non-loop mode to verify all tasks work correctly before enabling loop mode.
+</Accordion>
+
+<Accordion title="Use template variables">
+  Make prompts dynamic with `{{DATE}}`, `{{GIT_BRANCH}}`, `{{AGENT_PATH}}` for context-aware execution.
+</Accordion>
+
+## Troubleshooting
+
+**Playbook not appearing in dropdown**
+
+Playbooks are session-specific. Ensure you're viewing the dropdown in the correct agent session.
+
+**Tasks not completing**
+
+Check that checkboxes use the correct markdown syntax: `- [ ]` with a space between brackets.
+
+**Working copies not created**
+
+Verify "Reset on Completion" is enabled for the document and the `Runs/` subfolder has write permissions.
+
+**Worktree creation fails**
+
+Ensure:
+- Your project is a git repository
+- The base branch exists
+- The worktree branch name is valid (no spaces or special characters)
+- You have write permissions in the project directory
+
+## Related Documentation
+
+- [Auto Run + Playbooks](/autorun-playbooks) - Complete Auto Run guide
+- [Playbook Exchange](/playbook-exchange) - Community playbooks
+- [Slash Commands](/slash-commands) - Template variables reference
+- [Git Worktrees](/git-worktrees) - Worktree integration details

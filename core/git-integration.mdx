@@ -1,0 +1,439 @@
+---
+title: Git Integration
+description: Built-in version control features including diff viewer, git log, and worktree management
+---
+
+Maestro provides **first-class Git integration** with visual diff viewing, commit history browsing, and advanced worktree support for parallel development workflows.
+
+## Quick Access
+
+```bash
+Cmd+Shift+D        # View git diff (staged changes)
+Cmd+Shift+G        # View git log (commit history)
+```
+
+**Shortcuts**: `src/renderer/constants/shortcuts.ts:43-44`
+
+## Git Status Widget
+
+The **Git Status Widget** appears in the main panel header when you're in a git repository:
+
+### Visual Indicators
+
+- **Current branch** with icon
+- **Ahead/behind** remote (e.g., ↑3 ↓1)
+- **Uncommitted changes** count
+- **Click to view diff**
+
+```typescript
+// Git status interface
+interface GitStatus {
+  branch: string;
+  ahead: number;      // Commits ahead of remote
+  behind: number;     // Commits behind remote
+  modified: number;   // Modified files
+  added: number;      // Added files
+  deleted: number;    // Deleted files
+  untracked: number;  // Untracked files
+}
+```
+
+**Component**: `src/renderer/components/GitStatusWidget.tsx`
+
+## Diff Viewer
+
+Visualize staged changes with syntax-highlighted diffs:
+
+<Steps>
+  <Step title="Open Diff Viewer">
+    Press `Cmd+Shift+D` or click the Git Status Widget.
+    
+    **Modal**: `src/renderer/components/GitDiffViewer.tsx`
+  </Step>
+  
+  <Step title="Browse Changed Files">
+    Each file appears as a tab at the top. Click tabs to switch between files.
+    
+    **Navigation**: `Cmd+[` / `Cmd+]` to cycle through file tabs.
+  </Step>
+  
+  <Step title="View Changes">
+    Changes are displayed with:
+    
+    - **Green background**: Added lines
+    - **Red background**: Removed lines
+    - **Line numbers**: Both old and new
+    - **Syntax highlighting**: Based on file type
+  </Step>
+  
+  <Step title="Image Diffs">
+    Binary files (images) show side-by-side comparison with dimensions and file size.
+    
+    **Component**: `src/renderer/components/ImageDiffViewer.tsx`
+  </Step>
+</Steps>
+
+### Diff Viewer Features
+
+<AccordionGroup>
+  <Accordion title="Unified Diff Format">
+    Uses the standard unified diff format with hunk headers:
+    
+    ```diff
+    @@ -10,7 +10,8 @@ function example() {
+    ```
+    
+    Shows which lines changed and context around them.
+    
+    **Parser**: `src/renderer/utils/gitDiffParser.ts`
+  </Accordion>
+  
+  <Accordion title="Syntax Highlighting">
+    Code in diffs is syntax-highlighted based on file extension.
+    
+    Supports all major languages: TypeScript, JavaScript, Python, Rust, Go, etc.
+    
+    **Library**: `react-diff-view` with custom theme integration
+  </Accordion>
+  
+  <Accordion title="File Statistics">
+    Each file tab shows:
+    
+    - **+X**: Lines added (green)
+    - **-Y**: Lines removed (red)
+    - **File type** badge
+    
+    **Stats source**: `git diff --numstat`
+  </Accordion>
+  
+  <Accordion title="Split View (Planned)">
+    Future: Toggle between unified and split (side-by-side) diff views.
+  </Accordion>
+</AccordionGroup>
+
+## Git Log Viewer
+
+Browse commit history with rich details:
+
+```bash
+Cmd+Shift+G        # Open git log viewer
+```
+
+### Commit List
+
+Displays commits with:
+
+- **Commit hash** (short form)
+- **Author** and **date**
+- **Commit message** (first line)
+- **Changed files** count
+- **Branch indicators**
+
+### Commit Detail
+
+Click any commit to view:
+
+- **Full message** (including body)
+- **Changed files** with diff stats
+- **Parent commits**
+- **Commit metadata** (author, committer, date)
+
+**IPC Handler**: `git:log` in `src/main/index.ts`
+
+## Git Service API
+
+All git operations use the `gitService` abstraction:
+
+```typescript
+import { gitService } from '../services/git';
+
+// Check if directory is a git repo
+const isRepo = await gitService.isRepo(cwd);
+
+// Get status
+const status = await gitService.getStatus(cwd);
+// Returns: { files: [{ path: string, status: string }] }
+
+// Get diff
+const diff = await gitService.getDiff(cwd, ['file1.ts', 'file2.ts']);
+// Returns: { diff: string }
+
+// Get numstat (added/deleted lines per file)
+const numstat = await gitService.getNumstat(cwd);
+// Returns: { files: [{ path, additions, deletions }] }
+
+// Get branches
+const branches = await gitService.getBranches(cwd);
+// Returns: { branches: string[], current: string }
+
+// Get commit log
+const log = await gitService.getLog(cwd, { limit: 50 });
+// Returns: GitLogEntry[]
+```
+
+**Service**: `src/renderer/services/git.ts`
+
+## File Status Indicators
+
+Files in the File Explorer show git status:
+
+| Icon | Status | Color |
+|------|--------|-------|
+| **M** | Modified | Orange |
+| **A** | Added | Green |
+| **D** | Deleted | Red |
+| **?** | Untracked | Gray |
+| **C** | Conflicted | Red |
+
+**Implementation**: `src/renderer/contexts/GitStatusContext.tsx`
+
+## Git Worktree Support
+
+Maestro has **advanced worktree integration** for parallel development workflows.
+
+### What Are Worktrees?
+
+Git worktrees let you check out multiple branches simultaneously in separate directories:
+
+```bash
+# Traditional workflow (one branch at a time)
+git checkout feature-1
+# work on feature-1
+git checkout main
+# context switch penalty!
+
+# Worktree workflow (parallel branches)
+git worktree add ../feature-1 feature-1
+git worktree add ../feature-2 feature-2
+# work on both simultaneously!
+```
+
+### Maestro's Worktree Features
+
+<Tabs>
+  <Tab title="Auto Run with Worktrees">
+    Run Auto Run documents in isolated worktrees:
+    
+    1. Configure worktree settings in Batch Runner
+    2. Maestro creates/reuses worktree automatically
+    3. Auto Run executes in worktree (isolated from main workspace)
+    4. Optionally create PR when complete
+    
+    **Benefits**:
+    - Main workspace stays clean
+    - Continue working while Auto Run executes
+    - Automatic branch management
+    - PR creation from worktree branch
+    
+    **Modal**: `src/renderer/components/BatchRunnerModal.tsx`
+  </Tab>
+  
+  <Tab title="Worktree Agents">
+    Create agents that operate in worktree directories:
+    
+    1. Right-click agent → **Quick Create Worktree**
+    2. Select branch name
+    3. Maestro creates worktree and agent
+    4. Agent appears as child in agent list
+    
+    **Parent-Child Relationship**:
+    - Worktree agents show as indented under parent
+    - Visual indicator (branch icon)
+    - Automatic cleanup when parent is deleted
+    
+    **Context Menu**: `src/renderer/components/SessionList.tsx:82-85`
+  </Tab>
+  
+  <Tab title="PR Creation">
+    Create pull requests directly from worktree branches:
+    
+    ```bash
+    # From worktree agent context menu
+    Right-click → Create PR from Worktree
+    ```
+    
+    Requires GitHub CLI (`gh`) to be installed and authenticated.
+    
+    **IPC Handler**: `git:createPR` in `src/main/ipc/handlers/git.ts`
+  </Tab>
+</Tabs>
+
+### Worktree IPC API
+
+```typescript
+// Check worktree info
+const info = await window.maestro.git.worktreeInfo(worktreePath);
+// Returns: { exists, isWorktree, currentBranch, repoRoot }
+
+// Setup/create worktree
+const result = await window.maestro.git.worktreeSetup(
+  mainRepoCwd,
+  worktreePath,
+  branchName
+);
+// Returns: { success, created, currentBranch, branchMismatch }
+
+// Checkout branch in worktree
+const checkout = await window.maestro.git.worktreeCheckout(
+  worktreePath,
+  branchName,
+  createIfMissing
+);
+// Returns: { success, hasUncommittedChanges }
+
+// Create PR
+const pr = await window.maestro.git.createPR(
+  worktreePath,
+  baseBranch,
+  title,
+  body
+);
+// Returns: { success, prUrl }
+```
+
+**Preload**: `src/main/preload.ts` (git namespace)
+
+## GitHub Integration
+
+Maestro integrates with GitHub CLI for:
+
+### PR Creation
+
+```typescript
+interface PRDetails {
+  baseBranch: string;    // Target branch (e.g., 'main')
+  title: string;         // PR title
+  body: string;          // PR description
+}
+```
+
+Creates PR using `gh pr create` command.
+
+### Requirements
+
+<Steps>
+  <Step title="Install GitHub CLI">
+    ```bash
+    # macOS
+    brew install gh
+    
+    # Linux
+    # See https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+    ```
+  </Step>
+  
+  <Step title="Authenticate">
+    ```bash
+    gh auth login
+    ```
+    
+    Follow the prompts to authenticate with GitHub.
+  </Step>
+  
+  <Step title="Verify">
+    Maestro auto-detects `gh` via PATH.
+    
+    **Detection**: `src/main/utils/cliDetection.ts`
+  </Step>
+</Steps>
+
+## Remote URL Parsing
+
+Maestro parses git remote URLs to detect repository info:
+
+```typescript
+import { remoteUrlToBrowserUrl } from '../../shared/gitUtils';
+
+// Convert git remote to browser URL
+const url = remoteUrlToBrowserUrl('git@github.com:user/repo.git');
+// Returns: 'https://github.com/user/repo'
+
+// Supports multiple formats:
+// - SSH: git@github.com:user/repo.git
+// - HTTPS: https://github.com/user/repo.git
+// - GitHub: https://github.com/user/repo
+```
+
+**Utility**: `src/shared/gitUtils.ts`
+
+## Git Context in AI Prompts
+
+AI agents automatically receive git context:
+
+### Available Context
+
+- **Current branch**
+- **Uncommitted changes** (file list)
+- **Recent commits**
+- **Repository root**
+
+This enables prompts like:
+
+```
+"Review the changes I'm about to commit"
+"What branch am I on?"
+"Summarize recent commits"
+```
+
+The AI sees git status in its environment.
+
+## Performance Optimizations
+
+<AccordionGroup>
+  <Accordion title="Cached Git Status">
+    Git status is cached and refreshed:
+    
+    - On file tree refresh
+    - On manual git operations
+    - When switching agents
+    - On a 30-second interval (if active)
+    
+    **Context**: `src/renderer/contexts/GitStatusContext.tsx`
+  </Accordion>
+  
+  <Accordion title="Incremental Diffs">
+    Only staged files are included in diffs by default.
+    
+    Use `git diff --cached` instead of `git diff HEAD` for speed.
+  </Accordion>
+  
+  <Accordion title="Lazy Log Loading">
+    Commit log is loaded in batches (50 commits at a time) to handle large repositories.
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard Shortcuts
+
+```bash
+# Git Views
+Cmd+Shift+D        # View git diff
+Cmd+Shift+G        # View git log
+
+# In Diff Viewer
+Cmd+[              # Previous file
+Cmd+]              # Next file
+Esc                # Close diff viewer
+
+# File Preview
+Cmd+ArrowLeft      # Go back in file history
+Cmd+ArrowRight     # Go forward in file history
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:43-44, 112-121`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="File Explorer" icon="folder" href="/core/file-explorer">
+    Browse files with git status indicators
+  </Card>
+  <Card title="Agent Management" icon="users" href="/core/agent-management">
+    Worktree agents and parallel workflows
+  </Card>
+  <Card title="Output Filtering" icon="filter" href="/core/output-filtering">
+    Search AI responses and terminal output
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Complete keyboard reference
+  </Card>
+</CardGroup>

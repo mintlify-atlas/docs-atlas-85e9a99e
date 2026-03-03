@@ -1,0 +1,469 @@
+---
+title: "Document Graph"
+description: "Visualize markdown document relationships with interactive mind maps"
+---
+
+## Overview
+
+Document Graph creates an interactive mind map visualization of your markdown documents, showing links between files and external URLs.
+
+<Info>
+  See how your documentation connects together with a canvas-based graph powered by force-directed layout algorithms.
+</Info>
+
+## Opening the Graph
+
+Access from Auto Run documents:
+
+```bash
+# From Auto Run panel
+Click "Document Graph" button in toolbar
+
+# Keyboard shortcut (when Auto Run focused)
+Cmd+Shift+G (macOS) / Ctrl+Shift+G (Windows/Linux)
+```
+
+## Graph Elements
+
+### Nodes
+
+Three types of nodes in the graph:
+
+<Tabs>
+  <Tab title="Focus Document">
+    🎯 Center node - your current document
+    
+    ```typescript
+    {
+      type: 'document'
+      label: 'Current Document.md'
+      isFocus: true
+      color: accent
+      size: 'large'
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Linked Documents">
+    📄 Documents referenced by focus document
+    
+    ```typescript
+    {
+      type: 'document'  
+      label: 'Other Document.md'
+      isFocus: false
+      color: based on depth
+      size: 'medium'
+    }
+    ```
+  </Tab>
+  
+  <Tab title="External Links">
+    🔗 External URLs from documents
+    
+    ```typescript
+    {
+      type: 'external'
+      label: 'https://example.com'
+      color: warning
+      size: 'small'
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Links
+
+Connections between nodes:
+
+```typescript
+interface MindMapLink {
+  source: string       // Source node ID
+  target: string       // Target node ID  
+  type: 'wiki' | 'path' | 'external'
+  label?: string       // Optional link text
+}
+```
+
+**Link Types:**
+- **Wiki links**: `[[Document Name]]`
+- **Path links**: `[text](./path/to/doc.md)`
+- **External links**: `[text](https://example.com)`
+
+## Layout Algorithms
+
+Choose from multiple layout types:
+
+<Tabs>
+  <Tab title="Force Directed">
+    Physics-based simulation with natural spacing
+    
+    ```typescript
+    layoutType: 'force'
+    
+    // Spreads nodes using force simulation
+    // Best for organic, exploratory views
+    ```
+  </Tab>
+  
+  <Tab title="Radial">
+    Circular arrangement by depth
+    
+    ```typescript
+    layoutType: 'radial'
+    
+    // Focus in center, rings of connected docs
+    // Best for hierarchical structure
+    ```
+  </Tab>
+  
+  <Tab title="Hierarchical">
+    Tree-like top-down layout
+    
+    ```typescript
+    layoutType: 'hierarchical'
+    
+    // Focus at top, branches below
+    // Best for clear parent-child relationships
+    ```
+  </Tab>
+</Tabs>
+
+## Features
+
+### Neighbor Depth Filter
+
+Focus on nearby connections:
+
+```typescript
+neighborDepth: 1 | 2 | 3 | 4 | 999  // 999 = show all
+
+// Depth 1: Only direct connections
+// Depth 2: Connections + their connections
+// Depth 3+: Progressively more distant nodes
+```
+
+**Use case:** Reduce clutter by showing only relevant connections
+
+### Search & Highlight
+
+Find specific documents:
+
+```typescript
+// Search input filters visible nodes
+searchQuery: string
+
+// Matched nodes highlighted
+node.isHighlighted = node.label.toLowerCase().includes(searchQuery)
+
+// Non-matches dimmed
+node.opacity = isHighlighted ? 1 : 0.3
+```
+
+### Node Preview
+
+Click any document node to see preview:
+
+<CodeGroup>
+```typescript Preview Panel
+{
+  title: 'Document.md'
+  content: '# Heading\n\nFirst 1000 characters...'
+  metadata: {
+    created: Date
+    modified: Date
+    tasks: { completed: 5, total: 10 }
+    wordCount: 1234
+  }
+}
+```
+
+```typescript Markdown Rendering
+// Full markdown rendering with:
+- Syntax highlighting
+- Task lists
+- Images (if not too large)
+- Wiki link resolution
+```
+</CodeGroup>
+
+### Interactive Controls
+
+Mouse and keyboard interaction:
+
+| Action | Effect |
+|--------|--------|
+| Click node | Show preview panel |
+| Double-click document | Open in Auto Run |
+| Double-click external | Open in browser |
+| Drag node | Move and pin position |
+| Scroll | Zoom in/out |
+| Drag canvas | Pan view |
+| `Space` | Reset view to center |
+| `O` | Open focused node |
+| Arrow keys | Navigate nodes |
+
+## Context Menu
+
+Right-click nodes for actions:
+
+<Steps>
+  <Step title="Open Document">
+    Open `.md` file in Auto Run panel
+  </Step>
+  
+  <Step title="Focus Node">
+    Make this node the new center
+  </Step>
+  
+  <Step title="Copy Path">
+    Copy file path to clipboard
+  </Step>
+  
+  <Step title="Show Neighbors">
+    Highlight direct connections
+  </Step>
+</Steps>
+
+```typescript
+interface NodeContextMenuProps {
+  node: MindMapNode
+  onOpen: () => void
+  onFocus: () => void  
+  onCopyPath: () => void
+  onShowNeighbors: () => void
+}
+```
+
+## Graph Data Builder
+
+Scans directory for markdown files:
+
+```typescript
+// Build graph from Auto Run folder
+const graphData = await buildGraphData({
+  rootPath: '/path/to/docs',
+  focusFilePath: 'current-doc.md',
+  maxNodes: 200,
+  onProgress: (data: ProgressData) => {
+    console.log(`Scanned ${data.filesScanned}/${data.totalFiles}`)
+  }
+})
+```
+
+### Progress Tracking
+
+```typescript
+interface ProgressData {
+  filesScanned: number
+  totalFiles: number
+  currentFile: string
+  phase: 'scanning' | 'parsing' | 'building'
+}
+```
+
+### Caching
+
+File contents cached for performance:
+
+```typescript
+interface CachedExternalData {
+  content: string
+  links: Array<{
+    type: 'wiki' | 'path' | 'external'
+    target: string
+    text?: string
+  }>
+}
+
+// Cache invalidation
+invalidateCacheForFiles(['doc1.md', 'doc2.md'])
+```
+
+## Performance
+
+### Node Limits
+
+Large graphs load incrementally:
+
+```typescript
+const DEFAULT_MAX_NODES = 200
+const LOAD_MORE_INCREMENT = 25
+
+// Initial load
+loadNodes(DEFAULT_MAX_NODES)
+
+// "Load More" button
+loadNodes(currentCount + LOAD_MORE_INCREMENT)
+```
+
+### Virtual Rendering
+
+Canvas-based rendering for performance:
+
+```typescript
+// Only visible nodes rendered
+const visibleNodes = nodes.filter(node => {
+  return isInViewport(node.x, node.y, viewport)
+})
+
+// Update at 60fps
+requestAnimationFrame(renderFrame)
+```
+
+### Debounced Rebuilds
+
+Prevent excessive recalculation:
+
+```typescript
+const GRAPH_REBUILD_DEBOUNCE_DELAY = 300
+
+// Debounce on settings change
+const debouncedRebuild = useDebouncedCallback(
+  () => buildGraphData(...),
+  GRAPH_REBUILD_DEBOUNCE_DELAY
+)
+```
+
+## Settings Persistence
+
+Preferences saved per-agent:
+
+```typescript
+interface GraphSettings {
+  showExternalLinks: boolean       // Include external URLs
+  neighborDepth: number           // Focus depth
+  previewCharLimit: number        // Preview truncation
+  layoutType: MindMapLayoutType   // Layout algorithm
+  maxNodes: number               // Initial load count
+}
+
+// Saved to agent config
+session.documentGraphSettings = graphSettings
+```
+
+## Legend
+
+Visual guide to node types:
+
+```typescript
+interface LegendItem {
+  label: string
+  color: string  
+  icon: React.ComponentType
+}
+
+const legend: LegendItem[] = [
+  { label: 'Focus Document', color: accent, icon: Target },
+  { label: 'Linked Documents', color: textMain, icon: FileText },
+  { label: 'External Links', color: warning, icon: ExternalLink }
+]
+```
+
+## File Tree Resolution
+
+Wiki links resolved using file tree:
+
+```typescript
+interface FileNode {
+  name: string
+  type: 'file' | 'folder'
+  fullPath: string       // Relative to rootPath
+  children?: FileNode[]  // For folders
+}
+
+// Build from graph nodes
+const fileTree = buildFileTreeFromPaths(filePaths)
+
+// Resolve [[Wiki Link]] to path
+const resolved = resolveWikiLink('Wiki Link', fileTree)
+// → 'folder/Wiki Link.md'
+```
+
+## Backlink Updates
+
+Graph updates when files change:
+
+```typescript
+interface BacklinkUpdateData {
+  filePath: string
+  addedLinks: string[]    // New outgoing links
+  removedLinks: string[]  // Deleted outgoing links
+}
+
+// File watcher notifies graph
+onFileChanged(updateData => {
+  invalidateCacheForFiles([updateData.filePath])
+  rebuildGraph()
+})
+```
+
+## SSH Remote Limitations
+
+<Warning>
+  Document Graph is not available for SSH remote sessions. The graph requires local filesystem access to scan and parse markdown files.
+</Warning>
+
+```typescript
+if (sshRemoteId) {
+  return (
+    <UnavailableMessage>
+      Document Graph is not available for remote sessions
+    </UnavailableMessage>
+  )
+}
+```
+
+## Use Cases
+
+### Documentation Exploration
+
+```
+Use case: Understand documentation structure
+
+1. Open graph from any document
+2. Set depth to "All" for full view
+3. Identify central hub documents
+4. Find orphaned pages (no connections)
+5. Discover cross-references
+```
+
+### Link Validation
+
+```
+Use case: Find broken links
+
+1. Build graph for documentation
+2. Look for missing nodes (broken links)
+3. Check external link validity
+4. Fix references in source files
+```
+
+### Content Planning
+
+```
+Use case: Plan new content
+
+1. Open graph from index/overview doc
+2. Identify topics with few links
+3. Find opportunities for cross-linking
+4. Create new docs to fill gaps
+```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Reset view to center focus |
+| `O` | Open selected/hovered node |
+| `Enter` | Same as `O` |
+| `Arrow keys` | Navigate between nodes |
+| `Esc` | Close modal |
+| `+` / `-` | Zoom in/out |
+| `[` / `]` | Decrease/increase depth |
+
+## Related Features
+
+- [Auto Run](/power/auto-run-playbooks) - Document source for graphs
+- [Usage Dashboard](/analytics/usage-dashboard) - Query analytics
+- [File Preview](/features/file-preview) - View individual documents

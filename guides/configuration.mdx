@@ -1,0 +1,595 @@
+---
+title: Configuration
+description: Comprehensive guide to configuring Maestro settings, preferences, and agent behavior
+---
+
+## Overview
+
+Maestro provides extensive configuration options for customizing your workflow. All settings are automatically persisted and synchronized across application restarts.
+
+## Settings Architecture
+
+<Info>
+Settings are managed through a Zustand store with automatic persistence to disk.
+</Info>
+
+### Settings Storage
+
+**Platform-specific locations:**
+
+- **macOS**: `~/Library/Application Support/maestro/settings.json`
+- **Linux**: `~/.config/maestro/settings.json`
+- **Windows**: `%APPDATA%\maestro\settings.json`
+
+### Loading Behavior
+
+```typescript
+// Settings load automatically on mount
+useEffect(() => {
+  loadAllSettings();
+}, []);
+
+// Settings reload on system resume from sleep
+useEffect(() => {
+  const cleanup = window.maestro.app.onSystemResume(() => {
+    console.log('System resumed, reloading settings');
+    loadAllSettings();
+  });
+  return cleanup;
+}, []);
+```
+
+## Core Settings Categories
+
+### Conductor Profile
+
+<Tip>
+The Conductor Profile ("About Me") helps agents understand your context and preferences.
+</Tip>
+
+```typescript
+const { conductorProfile, setConductorProfile } = useSettings();
+
+// Example profile
+setConductorProfile(`
+I'm a full-stack developer working on:
+- React/TypeScript frontend
+- Node.js/Express backend
+- PostgreSQL database
+
+Preferences:
+- Use functional components with hooks
+- Prefer explicit types over inference
+- Write tests with Jest and React Testing Library
+`);
+```
+
+### LLM Provider Settings
+
+```typescript
+interface LLMSettings {
+  llmProvider: LLMProvider;  // 'anthropic' | 'openai' | 'custom'
+  modelSlug: string;         // Model identifier
+  apiKey: string;            // API key (encrypted)
+}
+
+const { llmProvider, modelSlug, apiKey } = useSettings();
+```
+
+### Shell Configuration
+
+<Tabs>
+  <Tab title="Default Shell">
+    ```typescript
+    const { 
+      defaultShell,         // 'system' | 'bash' | 'zsh' | 'fish' | 'custom'
+      setDefaultShell,
+      customShellPath,      // Path for 'custom' shell
+      setCustomShellPath
+    } = useSettings();
+    
+    // Use custom shell
+    setDefaultShell('custom');
+    setCustomShellPath('/usr/local/bin/fish');
+    ```
+  </Tab>
+  
+  <Tab title="Shell Arguments">
+    ```typescript
+    const { shellArgs, setShellArgs } = useSettings();
+    
+    // Example: interactive login shell
+    setShellArgs('-i -l');
+    ```
+  </Tab>
+  
+  <Tab title="Environment Variables">
+    ```typescript
+    const { shellEnvVars, setShellEnvVars } = useSettings();
+    
+    // Set custom environment
+    setShellEnvVars({
+      'NODE_ENV': 'development',
+      'PATH': '/usr/local/bin:$PATH',
+      'EDITOR': 'vim'
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### GitHub CLI Path
+
+```typescript
+const { ghPath, setGhPath } = useSettings();
+
+// Custom gh path
+setGhPath('/usr/local/bin/gh');
+```
+
+## UI Preferences
+
+### Font Settings
+
+```typescript
+const { 
+  fontFamily,      // Font name
+  fontSize,        // Base font size in px
+  setFontFamily,
+  setFontSize
+} = useSettings();
+
+// Custom font
+setFontFamily('JetBrains Mono');
+setFontSize(14);
+
+// Font size is applied to document root for rem-based scaling
+// document.documentElement.style.fontSize = `${fontSize}px`;
+```
+
+### Panel Dimensions
+
+```typescript
+const {
+  leftSidebarWidth,     // Left panel width in px
+  rightPanelWidth,      // Right panel width in px
+  terminalWidth,        // Terminal width in characters
+  setLeftSidebarWidth,
+  setRightPanelWidth,
+  setTerminalWidth
+} = useSettings();
+```
+
+### Input Behavior
+
+<Tabs>
+  <Tab title="Enter to Send">
+    ```typescript
+    const { 
+      enterToSendAI,         // Enter sends in AI mode
+      enterToSendTerminal,   // Enter sends in terminal mode
+      setEnterToSendAI,
+      setEnterToSendTerminal
+    } = useSettings();
+    
+    // Use Shift+Enter to send in AI mode
+    setEnterToSendAI(false);
+    ```
+  </Tab>
+  
+  <Tab title="Auto-Scroll">
+    ```typescript
+    const { autoScrollAiMode, setAutoScrollAiMode } = useSettings();
+    
+    // Disable auto-scroll (keyboard shortcut: Alt+Cmd+S)
+    setAutoScrollAiMode(false);
+    ```
+  </Tab>
+  
+  <Tab title="Message Alignment">
+    ```typescript
+    const { userMessageAlignment, setUserMessageAlignment } = useSettings();
+    
+    // Align user messages to right (chat-style)
+    setUserMessageAlignment('right');
+    ```
+  </Tab>
+</Tabs>
+
+### Display Modes
+
+```typescript
+const {
+  markdownEditMode,      // Edit mode vs preview in markdown
+  chatRawTextMode,       // Show raw text vs formatted
+  showHiddenFiles,       // Show hidden files in file explorer
+  setMarkdownEditMode,
+  setChatRawTextMode,
+  setShowHiddenFiles
+} = useSettings();
+```
+
+### Default Behaviors
+
+```typescript
+const {
+  defaultSaveToHistory,        // Save to history by default
+  defaultShowThinking,         // 'off' | 'on' | 'sticky'
+  setDefaultSaveToHistory,
+  setDefaultShowThinking
+} = useSettings();
+
+// Thinking mode options:
+// 'off' - Never show thinking
+// 'on' - Show thinking, can be toggled per session
+// 'sticky' - Show thinking, persists across sessions
+```
+
+## Notification Settings
+
+### OS Notifications
+
+```typescript
+const { 
+  osNotificationsEnabled,
+  setOsNotificationsEnabled
+} = useSettings();
+
+// Enable desktop notifications
+setOsNotificationsEnabled(true);
+```
+
+### Audio Feedback
+
+```typescript
+const {
+  audioFeedbackEnabled,
+  audioFeedbackCommand,   // Shell command for audio
+  setAudioFeedbackEnabled,
+  setAudioFeedbackCommand
+} = useSettings();
+
+// Custom audio command
+setAudioFeedbackCommand('afplay /System/Library/Sounds/Glass.aiff');
+```
+
+### Toast Duration
+
+```typescript
+const { toastDuration, setToastDuration } = useSettings();
+
+// Toast duration in ms (default: 3000)
+setToastDuration(5000);
+```
+
+## Logging Settings
+
+```typescript
+const {
+  logLevel,              // 'debug' | 'info' | 'warn' | 'error'
+  maxLogBuffer,          // Max log entries in memory
+  maxOutputLines,        // Max output lines per session
+  setLogLevel,
+  setMaxLogBuffer,
+  setMaxOutputLines
+} = useSettings();
+
+// Debug logging
+setLogLevel('debug');
+setMaxLogBuffer(10000);
+setMaxOutputLines(5000);
+```
+
+### Log Viewer Settings
+
+```typescript
+const { 
+  logViewerSelectedLevels,   // Filter levels in log viewer
+  setLogViewerSelectedLevels
+} = useSettings();
+
+// Show only warnings and errors
+setLogViewerSelectedLevels(['warn', 'error']);
+```
+
+## Update Settings
+
+```typescript
+const {
+  checkForUpdatesOnStartup,  // Auto-check for updates
+  enableBetaUpdates,         // Include beta versions
+  setCheckForUpdatesOnStartup,
+  setEnableBetaUpdates
+} = useSettings();
+```
+
+## Crash Reporting
+
+<Note>
+Maestro uses Sentry for crash reporting. Disable if you prefer not to send crash data.
+</Note>
+
+```typescript
+const { crashReportingEnabled, setCrashReportingEnabled } = useSettings();
+
+// Disable crash reporting
+setCrashReportingEnabled(false);
+```
+
+## Keyboard Shortcuts
+
+### Configuring Shortcuts
+
+```typescript
+interface Shortcut {
+  id: string;              // Unique identifier
+  label: string;           // Display label
+  keys: string[];          // Key combination
+}
+
+const { shortcuts, setShortcuts } = useSettings();
+
+// Customize a shortcut
+const newShortcuts = {
+  ...shortcuts,
+  toggleSidebar: {
+    id: 'toggleSidebar',
+    label: 'Toggle Left Panel',
+    keys: ['Alt', 'Meta', 'b']  // Changed from ArrowLeft
+  }
+};
+
+setShortcuts(newShortcuts);
+```
+
+### Tab Shortcuts
+
+```typescript
+const { tabShortcuts, setTabShortcuts } = useSettings();
+
+// Separate shortcuts for tab operations
+// newTab, closeTab, reopenClosedTab, etc.
+```
+
+## Context Management Settings
+
+```typescript
+interface ContextManagementSettings {
+  autoGroomingEnabled: boolean;
+  autoGroomingThreshold: number;       // Token count
+  enableContextTransfer: boolean;
+  transferFormat: 'full' | 'summary';
+  maxStoredSessions: number;
+  sessionRetentionDays: number;
+}
+
+const { 
+  contextManagementSettings,
+  updateContextManagementSettings
+} = useSettings();
+
+// Update specific settings
+updateContextManagementSettings({
+  autoGroomingEnabled: true,
+  autoGroomingThreshold: 8000
+});
+```
+
+## Stats & Analytics
+
+### Usage Statistics
+
+```typescript
+const {
+  statsCollectionEnabled,
+  defaultStatsTimeRange,  // 'day' | 'week' | 'month' | 'year' | 'all'
+  setStatsCollectionEnabled,
+  setDefaultStatsTimeRange
+} = useSettings();
+```
+
+### Auto Run Statistics
+
+```typescript
+interface AutoRunStats {
+  totalRuns: number;
+  totalDurationMs: number;
+  completedRuns: number;
+  failedRuns: number;
+  peakConcurrentRuns: number;
+  lastRunTimestamp: number;
+}
+
+const { 
+  autoRunStats,
+  recordAutoRunComplete,        // Record completion
+  updateAutoRunProgress,        // Update progress
+  acknowledgeBadge,             // Acknowledge achievement
+  getUnacknowledgedBadgeLevel  // Get next badge
+} = useSettings();
+```
+
+## File Indexing
+
+### Local Ignore Patterns
+
+```typescript
+const {
+  localIgnorePatterns,      // Glob patterns to ignore
+  localHonorGitignore,      // Honor .gitignore
+  setLocalIgnorePatterns,
+  setLocalHonorGitignore
+} = useSettings();
+
+// Custom ignore patterns
+setLocalIgnorePatterns([
+  'node_modules/**',
+  'dist/**',
+  '*.log',
+  '.env*'
+]);
+```
+
+### SSH Remote Ignore Patterns
+
+```typescript
+const {
+  sshRemoteIgnorePatterns,
+  sshRemoteHonorGitignore,
+  setSshRemoteIgnorePatterns,
+  setSshRemoteHonorGitignore
+} = useSettings();
+```
+
+## Advanced Settings
+
+### Power Management
+
+```typescript
+const { preventSleepEnabled, setPreventSleepEnabled } = useSettings();
+
+// Prevent system sleep during agent operations
+await setPreventSleepEnabled(true);
+```
+
+### Rendering Settings
+
+```typescript
+const {
+  disableGpuAcceleration,  // Disable GPU rendering
+  disableConfetti,         // Disable confetti animations
+  setDisableGpuAcceleration,
+  setDisableConfetti
+} = useSettings();
+```
+
+### Accessibility
+
+```typescript
+const { colorBlindMode, setColorBlindMode } = useSettings();
+
+// Enable colorblind-friendly palette
+setColorBlindMode(true);
+```
+
+### Automatic Features
+
+```typescript
+const {
+  automaticTabNamingEnabled,   // Auto-name tabs based on content
+  fileTabAutoRefreshEnabled,   // Auto-refresh file preview tabs
+  setAutomaticTabNamingEnabled,
+  setFileTabAutoRefreshEnabled
+} = useSettings();
+```
+
+### Platform-Specific
+
+```typescript
+const { 
+  suppressWindowsWarning,     // Suppress Windows compatibility warning
+  setSuppressWindowsWarning
+} = useSettings();
+```
+
+## Window Chrome
+
+```typescript
+const {
+  useNativeTitleBar,    // Use native OS title bar
+  autoHideMenuBar,      // Auto-hide menu bar (Linux/Windows)
+  setUseNativeTitleBar,
+  setAutoHideMenuBar
+} = useSettings();
+```
+
+## Encore Features
+
+<Info>
+Encore Features are experimental features disabled by default.
+</Info>
+
+```typescript
+interface EncoreFeatureFlags {
+  [featureName: string]: boolean;
+}
+
+const { encoreFeatures, setEncoreFeatures } = useSettings();
+
+// Enable experimental feature
+setEncoreFeatures({
+  ...encoreFeatures,
+  'new-feature': true
+});
+```
+
+## Web Interface Settings
+
+```typescript
+const {
+  webInterfaceUseCustomPort,
+  webInterfaceCustomPort,
+  setWebInterfaceUseCustomPort,
+  setWebInterfaceCustomPort
+} = useSettings();
+
+// Custom web interface port
+setWebInterfaceUseCustomPort(true);
+setWebInterfaceCustomPort(3000);
+```
+
+## WakaTime Integration
+
+```typescript
+const {
+  wakatimeApiKey,
+  wakatimeEnabled,
+  wakatimeDetailedTracking,
+  setWakatimeApiKey,
+  setWakatimeEnabled,
+  setWakatimeDetailedTracking
+} = useSettings();
+
+// Enable WakaTime tracking
+setWakatimeApiKey('waka_...');
+setWakatimeEnabled(true);
+setWakatimeDetailedTracking(true);
+```
+
+## Exporting and Importing Settings
+
+<Warning>
+Settings contain sensitive data like API keys. Be careful when sharing exported settings.
+</Warning>
+
+### Export Settings
+
+1. Open Settings > Advanced
+2. Click "Export Settings"
+3. Save JSON file
+
+### Import Settings
+
+1. Open Settings > Advanced
+2. Click "Import Settings"
+3. Select JSON file
+4. Review and confirm changes
+
+### Settings File Structure
+
+```json
+{
+  "conductorProfile": "...",
+  "llmProvider": "anthropic",
+  "activeThemeId": "dracula",
+  "shortcuts": { ... },
+  "customAICommands": [ ... ],
+  // ... other settings
+}
+```
+
+## Next Steps
+
+- Customize your experience with [Themes](/guides/themes)
+- Learn about [Slash Commands](/guides/slash-commands) configuration
+- Configure [SSH Remote Execution](/guides/ssh-remote-execution)
+- Review [General Usage](/guides/general-usage) patterns

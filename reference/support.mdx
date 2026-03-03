@@ -1,0 +1,218 @@
+---
+title: Support & Community
+description: Get help with Maestro - community resources, support channels, and how to report issues
+icon: life-ring
+---
+
+# Support & Community
+
+Welcome to the Maestro community! Whether you're looking for help, want to share your experience, or contribute to the project, we have several channels available.
+
+## Getting Help
+
+### Documentation
+
+Start with our comprehensive documentation:
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/quickstart">
+    New to Maestro? Start here
+  </Card>
+  <Card title="General Usage" icon="book" href="/guides/general-usage">
+    Core features and workflows
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Essential keyboard shortcuts
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>
+
+### Discord Community
+
+Join our Discord server for real-time help and discussions:
+
+**[Join Maestro Discord](https://runmaestro.ai/discord)**
+
+The Discord community is great for:
+- Getting quick answers to questions
+- Sharing tips and workflows
+- Discussing feature ideas
+- Connecting with other Maestro users
+- Showcasing what you've built
+
+### GitHub Discussions
+
+For longer-form discussions and questions:
+
+**[GitHub Discussions](https://github.com/RunMaestro/Maestro/discussions)**
+
+Use Discussions for:
+- Feature requests and ideas
+- General questions about usage
+- Sharing playbooks and workflows
+- Community showcase
+
+## Reporting Issues
+
+### Bug Reports
+
+Found a bug? Please report it on GitHub:
+
+**[Create a Bug Report](https://github.com/RunMaestro/Maestro/issues/new)**
+
+When reporting a bug, please include:
+
+<Steps>
+  <Step title="System Information">
+    - Operating system and version
+    - Maestro version (Help → About)
+    - Agent type (Claude Code, Codex, OpenCode, etc.)
+  </Step>
+  <Step title="Steps to Reproduce">
+    Clear, numbered steps to reproduce the issue
+  </Step>
+  <Step title="Expected vs Actual">
+    - What you expected to happen
+    - What actually happened
+  </Step>
+  <Step title="Additional Context">
+    - Screenshots if applicable
+    - Relevant logs (see [Troubleshooting](../troubleshooting#system-logs))
+    - Error messages
+  </Step>
+</Steps>
+
+### Feature Requests
+
+Have an idea for a new feature?
+
+**[Request a Feature](https://github.com/RunMaestro/Maestro/issues/new)**
+
+Describe:
+- The problem you're trying to solve
+- How the feature would work
+- Why it would be valuable to other users
+
+### Performance Issues
+
+Experiencing UI lag or slowness? We can help diagnose it.
+
+See our [Performance Profiling Guide](./performance-profiling) for instructions on capturing diagnostic data.
+
+## Contributing
+
+Want to contribute code, documentation, or playbooks?
+
+<CardGroup cols={2}>
+  <Card title="Contributing Guide" icon="code-pull-request" href="./contributing">
+    Development setup and guidelines
+  </Card>
+  <Card title="Share Playbooks" icon="book" href="https://github.com/pedramamini/Maestro-Playbooks">
+    Contribute to the Playbook Exchange
+  </Card>
+</CardGroup>
+
+We welcome contributions of all kinds:
+- Bug fixes
+- New features
+- Documentation improvements
+- UI/UX enhancements
+- Test coverage
+- Playbook creation
+
+## Social Media
+
+Stay updated on Maestro news and releases:
+
+- **Twitter/X**: [@RunMaestro](https://twitter.com/RunMaestro)
+- **BlueSky**: [@runmaestro.ai](https://bsky.app/profile/runmaestro.ai)
+- **GitHub**: [RunMaestro/Maestro](https://github.com/RunMaestro/Maestro)
+
+## Team
+
+Meet the team behind Maestro at [runmaestro.ai/team](https://runmaestro.ai/team/).
+
+## Community Guidelines
+
+When participating in the Maestro community:
+
+<Check>
+  **Do:**
+  - Be respectful and constructive
+  - Help others when you can
+  - Search before asking (your question may be answered already)
+  - Provide context when asking for help
+  - Share what you've learned
+</Check>
+
+<Warning>
+  **Don't:**
+  - Spam or self-promote excessively
+  - Share API keys, tokens, or sensitive data
+  - Demand immediate responses
+  - Post the same question in multiple channels
+</Warning>
+
+## Frequently Asked Questions
+
+### Can I use Maestro commercially?
+
+Yes! Maestro is licensed under AGPL-3.0, which allows commercial use. See the [LICENSE](https://github.com/RunMaestro/Maestro/blob/main/LICENSE) for details.
+
+### Is my data private?
+
+Yes. Maestro runs entirely on your local machine. Conversations, files, and configuration are stored locally. The only data sent externally is:
+- AI prompts to your chosen provider (Claude, Codex, etc.)
+- Optional crash reports via Sentry (can be disabled in Settings)
+- Optional leaderboard stats (requires explicit opt-in)
+
+### Which AI providers are supported?
+
+Currently:
+- Claude Code (Anthropic)
+- OpenAI Codex
+- OpenCode
+- Factory Droid
+
+See [Provider Notes](../provider-notes) for configuration details.
+
+### Can I run Maestro on a server?
+
+Yes! Use the CLI tool (`maestro-cli`) for headless operation. See [CLI Documentation](../cli).
+
+### Does Maestro work offline?
+
+The Maestro UI works offline, but AI agents require internet access to communicate with their respective providers.
+
+### How do I update Maestro?
+
+Enable auto-updates in **Settings → General → Updates**. Or download the latest release from [GitHub Releases](https://github.com/RunMaestro/Maestro/releases).
+
+## Additional Resources
+
+<CardGroup cols={3}>
+  <Card title="Documentation" icon="book" href="/">
+    Full documentation site
+  </Card>
+  <Card title="GitHub Repo" icon="github" href="https://github.com/RunMaestro/Maestro">
+    Source code and releases
+  </Card>
+  <Card title="Discord" icon="discord" href="https://runmaestro.ai/discord">
+    Join the community
+  </Card>
+  <Card title="MCP Server" icon="server" href="/api/mcp-server">
+    Connect AI apps to docs
+  </Card>
+  <Card title="Security Policy" icon="shield" href="./security">
+    Report security issues
+  </Card>
+  <Card title="Changelog" icon="clock" href="./changelog">
+    Version history
+  </Card>
+</CardGroup>
+
+---
+
+**Still have questions?** Don't hesitate to ask in [Discord](https://runmaestro.ai/discord) or [GitHub Discussions](https://github.com/RunMaestro/Maestro/discussions)!

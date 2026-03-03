@@ -1,0 +1,244 @@
+---
+title: Contributing Guide
+description: How to contribute to Maestro - development setup, guidelines, and processes
+icon: code-pull-request
+---
+
+# Contributing to Maestro
+
+Thank you for your interest in contributing to Maestro! This guide provides essential information for developers. For complete technical documentation, see [CONTRIBUTING.md](https://github.com/RunMaestro/Maestro/blob/main/CONTRIBUTING.md) in the repository.
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+
+- npm or yarn
+- Git
+
+### Getting Started
+
+```bash
+# Fork and clone the repository
+git clone <your-fork-url>
+cd maestro
+
+# Install dependencies
+npm install
+
+# Run in development mode with hot reload
+npm run dev
+```
+
+## Development Scripts
+
+```bash
+npm run dev            # Start dev server (isolated data directory)
+npm run dev:prod-data  # Start dev with production data (close prod app first)
+npm run dev:demo       # Start in demo mode (fresh settings)
+npm run build          # Full production build
+npm run lint           # TypeScript type checking
+npm run lint:eslint    # ESLint code quality checks
+npm test               # Run test suite
+npm run package        # Package for all platforms
+```
+
+<Tip>
+`npm run dev` uses an isolated data directory (`maestro-dev/`) so you can run both dev and production simultaneously. This is useful when using production Maestro to work on the dev instance.
+</Tip>
+
+## Core Goals
+
+**Snappy interface and reduced battery consumption are fundamental goals.** Every contribution should consider:
+
+- **Responsiveness** - UI interactions should feel instant
+- **Battery efficiency** - Minimize unnecessary timers and polling
+- **Memory efficiency** - Clean up event listeners and timers properly
+
+## Project Structure
+
+```
+maestro/
+├── src/
+│   ├── main/              # Electron main process (Node.js)
+│   │   ├── index.ts       # Entry point, IPC handlers
+│   │   ├── process-manager.ts
+│   │   └── preload.ts     # Secure IPC bridge
+│   ├── renderer/          # React frontend
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   └── services/
+│   ├── cli/               # CLI tool (maestro-cli)
+│   ├── web/               # Web/mobile interface
+│   └── shared/            # Shared code
+├── docs/                  # Mintlify documentation
+└── build/                 # Application icons
+```
+
+## Common Tasks
+
+### Adding a New UI Feature
+
+1. Plan the state (per-agent or global)
+2. Add state management in `useSettings.ts` or agent state
+3. Create persistence with wrapper function pattern
+4. Implement UI following Tailwind + theme color pattern
+5. Add keyboard shortcuts in `shortcuts.ts` and `App.tsx`
+6. Test focus flow and Escape key navigation
+
+### Adding a Keyboard Shortcut
+
+1. Add definition in `src/renderer/constants/shortcuts.ts`:
+   ```typescript
+   myShortcut: { id: 'myShortcut', label: 'My Action', keys: ['Meta', 'k'] }
+   ```
+2. Add handler in `App.tsx` keyboard event listener
+
+### Adding a Modal
+
+1. Create component in `src/renderer/components/`
+2. Add priority in `src/renderer/constants/modalPriorities.ts`
+3. Register with layer stack (see Architecture docs)
+4. Use proper ARIA attributes
+
+### Adding an IPC Handler
+
+1. Add handler in `src/main/index.ts`:
+   ```typescript
+   ipcMain.handle('myNamespace:myAction', async (_, arg1, arg2) => {
+     // Implementation
+     return result;
+   });
+   ```
+2. Expose in `src/main/preload.ts`
+3. Add types to `MaestroAPI` interface
+
+## Code Style
+
+- **Indentation**: Tabs (not spaces) - match existing file indentation
+- **TypeScript**: Strict mode enabled, interface definitions for all data
+- **React**: Functional components with hooks
+- **Styling**: Tailwind for layout, inline styles for theme colors
+- **Security**: Always use `execFileNoThrow` for commands (never shell execution)
+
+## Testing
+
+```bash
+npm test                              # Run all tests
+npm test -- --watch                   # Watch mode
+npm test -- --testPathPattern="name"  # Run specific tests
+npm test -- --coverage                # Coverage report
+```
+
+## Linting & Pre-commit Hooks
+
+This project uses Husky and lint-staged to automatically format and lint staged files before each commit.
+
+**How it works:**
+1. When you run `git commit`, Husky triggers the pre-commit hook
+2. lint-staged runs Prettier and ESLint only on staged files
+3. Fixed files are automatically re-staged
+4. If there are unfixable errors, the commit is blocked
+
+**Bypassing hooks (emergency only):**
+```bash
+git commit --no-verify -m "emergency fix"
+```
+
+## Pull Request Process
+
+### Automated Code Review
+
+PRs are automatically reviewed by two AI-powered tools:
+
+- **CodeRabbit** - Line-level code review with inline comments
+- **Greptile** - Codebase-aware review with architectural context
+
+You can reply to their comments to ask follow-up questions.
+
+### Before Opening a PR
+
+1. **Linting passes**:
+   ```bash
+   npm run lint && npm run lint:eslint
+   ```
+2. **Tests pass**:
+   ```bash
+   npm test
+   ```
+3. **Manual testing** - Test affected features in `npm run dev`
+4. **No console errors** - Check DevTools (`Cmd+Option+I`)
+5. **UI renders correctly** - Test across different themes
+
+### PR Checklist
+
+- [ ] Linting passes
+- [ ] Tests pass
+- [ ] Manually tested affected features
+- [ ] No new console warnings or errors
+- [ ] Documentation updated if needed
+- [ ] Commit messages follow conventional format
+
+## Performance Guidelines
+
+- **Memoize expensive computations** with `useMemo`
+- **Use Maps for lookups** instead of `Array.find()` in loops
+- **Batch state updates** - use `useBatchedSessionUpdates` hook
+- **Prefer longer intervals** - 3 seconds instead of 1 second
+- **Clean up all timers** in `useEffect` cleanup functions
+- **Debounce persistence** - use `useDebouncedPersistence`
+
+## Documentation
+
+User documentation lives in the `docs/` directory and is hosted on [Mintlify](https://mintlify.com).
+
+### Adding a Documentation Page
+
+1. Create markdown file in `docs/`:
+   ```markdown
+   ---
+   title: My Feature
+   description: Brief description for SEO
+   icon: star
+   ---
+
+   Content goes here...
+   ```
+2. Add to navigation in `docs/docs.json`
+3. Reference from other pages using relative links
+
+### Screenshots
+
+- Store in `docs/screenshots/`
+- Use PNG format with descriptive kebab-case names
+- Capture using demo mode: `rm -rf /tmp/maestro-demo && npm run dev:demo`
+- Reference with relative paths: `![Feature](./screenshots/my-feature.png)`
+
+## Building for Release
+
+```bash
+npm run package           # All platforms
+npm run package:mac       # macOS (.dmg, .zip)
+npm run package:win       # Windows (.exe)
+npm run package:linux     # Linux (.AppImage, .deb, .rpm)
+```
+
+Output in `release/` directory.
+
+## Community
+
+- **Discord**: [Join Us](https://runmaestro.ai/discord)
+- **GitHub Issues**: [Report bugs & request features](https://github.com/RunMaestro/Maestro/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/RunMaestro/Maestro/discussions)
+
+## Additional Resources
+
+- [ARCHITECTURE.md](https://github.com/RunMaestro/Maestro/blob/main/ARCHITECTURE.md) - Complete architecture guide
+- [CONTRIBUTING.md](https://github.com/RunMaestro/Maestro/blob/main/CONTRIBUTING.md) - Full contributing guide
+- [CLAUDE.md](https://github.com/RunMaestro/Maestro/blob/main/CLAUDE.md) - AI-focused development guide
+- [AGENT_SUPPORT.md](https://github.com/RunMaestro/Maestro/blob/main/AGENT_SUPPORT.md) - Agent integration guide
+
+## Questions?
+
+Open a GitHub Discussion or create an Issue. We're here to help!

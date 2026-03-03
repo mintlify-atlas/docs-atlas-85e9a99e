@@ -1,0 +1,267 @@
+---
+title: "Tunnel Manager"
+description: "Secure public internet access to Maestro using Cloudflare tunnels"
+icon: "cloud"
+---
+
+The Tunnel Manager provides secure public internet access to Maestro's web interface using Cloudflare's `cloudflared` tunneling service.
+
+## Overview
+
+Cloudflare tunnels create a secure HTTPS connection from your local Maestro instance to the internet without exposing your IP address or requiring port forwarding.
+
+<Info>
+Tunnels are ideal for accessing Maestro from anywhere, sharing sessions with team members, or accessing from mobile devices outside your local network.
+</Info>
+
+## Prerequisites
+
+<Steps>
+  <Step title="Install cloudflared">
+    Install Cloudflare's tunnel client:
+    
+    <CodeGroup>
+    ```bash macOS
+    brew install cloudflare/cloudflare/cloudflared
+    ```
+    
+    ```bash Windows
+    # Download from https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
+    ```
+    
+    ```bash Linux
+    wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+    sudo dpkg -i cloudflared-linux-amd64.deb
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Enable Web Interface">
+    Enable Maestro's web server from **Settings → Web Interface**
+  </Step>
+</Steps>
+
+## Starting a Tunnel
+
+Maestro automatically manages the tunnel lifecycle:
+
+<Steps>
+  <Step title="Enable Tunnel">
+    In Maestro settings, enable **Use Cloudflare Tunnel**
+  </Step>
+  
+  <Step title="Tunnel Starts Automatically">
+    Maestro starts `cloudflared` and waits for the tunnel URL (max 30 seconds)
+  </Step>
+  
+  <Step title="Access Public URL">
+    Copy the generated `https://*.trycloudflare.com` URL to access Maestro from anywhere
+  </Step>
+</Steps>
+
+## Tunnel Status
+
+Check tunnel status programmatically:
+
+<CodeGroup>
+```typescript TypeScript
+interface TunnelStatus {
+  isRunning: boolean;
+  url: string | null;
+  error: string | null;
+}
+
+const status = tunnelManager.getStatus();
+console.log('Tunnel URL:', status.url);
+console.log('Running:', status.isRunning);
+```
+
+```typescript Example Response
+{
+  "isRunning": true,
+  "url": "https://abc-123-def.trycloudflare.com",
+  "error": null
+}
+```
+</CodeGroup>
+
+## API Reference
+
+### start(port: number)
+
+Start a new tunnel to the specified local port.
+
+<ParamField path="port" type="number" required>
+  Local port number to tunnel (1-65535)
+</ParamField>
+
+<ResponseField name="success" type="boolean">
+  Whether tunnel started successfully
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  Public HTTPS URL (only present if success is true)
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message (only present if success is false)
+</ResponseField>
+
+<CodeGroup>
+```typescript Usage
+const result = await tunnelManager.start(8080);
+
+if (result.success) {
+  console.log('Tunnel URL:', result.url);
+  // https://abc-123-def.trycloudflare.com
+} else {
+  console.error('Failed:', result.error);
+}
+```
+
+```typescript Success Response
+{
+  "success": true,
+  "url": "https://abc-123-def.trycloudflare.com"
+}
+```
+
+```typescript Error Response
+{
+  "success": false,
+  "error": "cloudflared is not installed"
+}
+```
+</CodeGroup>
+
+### stop()
+
+Stop the currently running tunnel.
+
+<CodeGroup>
+```typescript Usage
+await tunnelManager.stop();
+console.log('Tunnel stopped');
+```
+</CodeGroup>
+
+The tunnel process receives `SIGTERM` and has 3 seconds to gracefully shutdown before receiving `SIGKILL`.
+
+### getStatus()
+
+Get current tunnel status.
+
+<ResponseField name="isRunning" type="boolean">
+  Whether tunnel is currently active
+</ResponseField>
+
+<ResponseField name="url" type="string | null">
+  Public HTTPS URL (null if not running)
+</ResponseField>
+
+<ResponseField name="error" type="string | null">
+  Last error message (null if no errors)
+</ResponseField>
+
+## Error Handling
+
+The tunnel manager handles common error scenarios:
+
+<AccordionGroup>
+  <Accordion title="cloudflared not installed">
+    **Error**: `cloudflared is not installed`
+    
+    **Solution**: Install cloudflared using the instructions in Prerequisites
+  </Accordion>
+  
+  <Accordion title="Invalid port number">
+    **Error**: `Invalid port number: {port}`
+    
+    **Solution**: Port must be between 1 and 65535
+  </Accordion>
+  
+  <Accordion title="Tunnel startup timeout">
+    **Error**: `Tunnel startup timed out (30s)`
+    
+    **Solution**: Check network connectivity and try again. The timeout may occur on slow connections.
+  </Accordion>
+  
+  <Accordion title="Connection refused">
+    **Error**: `Connection refused`
+    
+    **Solution**: Ensure the web server is running on the specified port before starting the tunnel
+  </Accordion>
+</AccordionGroup>
+
+## Implementation Details
+
+The tunnel manager spawns `cloudflared` as a child process:
+
+```bash
+cloudflared tunnel --url http://localhost:{port}
+```
+
+<ParamField path="command" type="string">
+  `cloudflared` (uses system PATH or configured custom path)
+</ParamField>
+
+<ParamField path="args" type="array">
+  `['tunnel', '--url', 'http://localhost:{port}']`
+</ParamField>
+
+### URL Detection
+
+The manager parses `cloudflared`'s stderr output to extract the tunnel URL:
+
+```regex
+https://[a-z0-9-]+\.trycloudflare\.com
+```
+
+<Note>
+Cloudflare outputs the URL to stderr (not stdout). Maestro accumulates buffer chunks to handle URLs split across multiple writes.
+</Note>
+
+### Process Lifecycle
+
+1. **Start**: Spawn `cloudflared` with tunnel args
+2. **Monitor**: Listen for URL in stderr output (30s timeout)
+3. **Running**: Keep process alive and maintain URL reference
+4. **Stop**: Send SIGTERM, wait 3s, then SIGKILL if needed
+
+Source: `src/main/tunnel-manager.ts:1`
+
+## Security Considerations
+
+<CardGroup cols={2}>
+  <Card title="HTTPS by Default" icon="lock">
+    All tunnel URLs use HTTPS with Cloudflare's TLS certificates
+  </Card>
+  
+  <Card title="Temporary URLs" icon="clock">
+    Free trycloudflare.com URLs are temporary and change on restart
+  </Card>
+  
+  <Card title="No IP Exposure" icon="eye-slash">
+    Your local IP address is never exposed to the internet
+  </Card>
+  
+  <Card title="Token Required" icon="key">
+    Access still requires Maestro's security token from the web server
+  </Card>
+</CardGroup>
+
+<Warning>
+Free Cloudflare tunnels are not suitable for production use. For persistent, custom domains, configure a Cloudflare account with named tunnels.
+</Warning>
+
+## Advanced: Custom cloudflared Path
+
+If `cloudflared` is not in your system PATH, Maestro will attempt to locate it in common installation directories. You can also specify a custom path in Maestro's configuration.
+
+Source: `src/main/utils/cliDetection.ts`
+
+## Related Resources
+
+- [Web Server API](/api/web-server)
+- [Mobile & Remote Access](/power/mobile-remote)
+- [Cloudflare Tunnel Documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)

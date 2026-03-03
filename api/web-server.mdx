@@ -1,0 +1,329 @@
+---
+title: "Web Server API"
+description: "HTTP and WebSocket API for remote access to Maestro sessions"
+icon: "browser"
+---
+
+Maestro includes a built-in web server that provides HTTP and WebSocket APIs for remote access to your AI coding sessions from mobile devices and browsers.
+
+## Architecture
+
+The web server provides:
+
+- **HTTP REST API** for session management and control
+- **WebSocket API** for real-time session updates
+- **Mobile-optimized UI** for on-the-go access
+- **Security token authentication** for secure remote access
+
+<Warning>
+The web server is designed for local network access. Exposing it to the public internet requires additional security measures (see [Tunnel Manager](/api/tunnel-manager)).
+</Warning>
+
+## Configuration
+
+Enable the web server from Maestro's settings:
+
+<Steps>
+  <Step title="Open Settings">
+    Press `Cmd/Ctrl + ,` or navigate to **Maestro → Settings**
+  </Step>
+  
+  <Step title="Enable Web Interface">
+    Toggle **Enable Web Interface** to start the server
+  </Step>
+  
+  <Step title="Configure Port (Optional)">
+    By default, Maestro uses a random available port. You can specify a custom port:
+    
+    - Enable **Use Custom Port**
+    - Set **Custom Port** (default: 8080)
+  </Step>
+  
+  <Step title="Access Web Interface">
+    Click the generated URL or scan the QR code to access from mobile devices
+  </Step>
+</Steps>
+
+## URL Structure
+
+All endpoints require a security token that's automatically generated when the server starts.
+
+```
+http://localhost:PORT/$TOKEN/                  → Dashboard (all live sessions)
+http://localhost:PORT/$TOKEN/session/$UUID     → Single session view
+http://localhost:PORT/$TOKEN/api/*             → REST API
+http://localhost:PORT/$TOKEN/ws                → WebSocket
+```
+
+<Note>
+The security token is regenerated each time Maestro restarts. Bookmark the full URL including the token.
+</Note>
+
+## REST API Endpoints
+
+### Get All Sessions
+
+Retrieve all active sessions.
+
+<CodeGroup>
+```http Request
+GET /$TOKEN/api/sessions
+```
+
+```json Response
+[
+  {
+    "id": "session-uuid",
+    "name": "My Coding Session",
+    "toolType": "claude-code",
+    "state": "idle",
+    "inputMode": "ai",
+    "cwd": "/path/to/project",
+    "groupId": "group-uuid",
+    "groupName": "Backend Team",
+    "groupEmoji": "🚀",
+    "agentSessionId": "claude-session-id",
+    "usageStats": {
+      "inputTokens": 1500,
+      "outputTokens": 800
+    },
+    "aiTabs": [
+      {
+        "id": "tab-uuid",
+        "name": "Main",
+        "starred": false,
+        "state": "idle"
+      }
+    ],
+    "activeTabId": "tab-uuid"
+  }
+]
+```
+</CodeGroup>
+
+### Get Session Details
+
+Retrieve detailed information for a specific session, including conversation logs.
+
+<CodeGroup>
+```http Request
+GET /$TOKEN/api/session/:sessionId?tabId=optional-tab-id
+```
+
+```json Response
+{
+  "id": "session-uuid",
+  "name": "My Coding Session",
+  "toolType": "claude-code",
+  "state": "idle",
+  "inputMode": "ai",
+  "cwd": "/path/to/project",
+  "aiLogs": [
+    {
+      "source": "stdin",
+      "text": "Write a hello world function",
+      "timestamp": 1234567890
+    },
+    {
+      "source": "stdout",
+      "text": "I'll create a hello world function for you...",
+      "timestamp": 1234567891
+    }
+  ],
+  "shellLogs": [],
+  "agentSessionId": "claude-session-id"
+}
+```
+</CodeGroup>
+
+### Get Theme
+
+Retrieve the current theme configuration.
+
+<CodeGroup>
+```http Request
+GET /$TOKEN/api/theme
+```
+
+```json Response
+{
+  "id": "dracula",
+  "name": "Dracula",
+  "colors": {
+    "background": "#282a36",
+    "foreground": "#f8f8f2",
+    "primary": "#bd93f9"
+  }
+}
+```
+</CodeGroup>
+
+### Send Command
+
+Execute a command in a session.
+
+<CodeGroup>
+```http Request
+POST /$TOKEN/api/session/:sessionId/write
+Content-Type: application/json
+
+{
+  "data": "Write a hello world function\n"
+}
+```
+
+```json Response
+{
+  "success": true
+}
+```
+</CodeGroup>
+
+### Interrupt Session
+
+Stop the currently running command in a session.
+
+<CodeGroup>
+```http Request
+POST /$TOKEN/api/session/:sessionId/interrupt
+```
+
+```json Response
+{
+  "success": true
+}
+```
+</CodeGroup>
+
+## WebSocket API
+
+Connect to the WebSocket endpoint for real-time updates.
+
+### Connection
+
+```javascript
+const ws = new WebSocket(`ws://localhost:${port}/${token}/ws`);
+
+ws.onopen = () => {
+  console.log('Connected to Maestro');
+};
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  handleMessage(message);
+};
+```
+
+### Message Types
+
+<ParamField path="type" type="string" required>
+  Message type identifier
+  
+  - `init` - Initial connection data
+  - `session:state` - Session state change
+  - `session:added` - New session created
+  - `session:removed` - Session deleted
+  - `session:live` - Session marked as live
+  - `session:offline` - Session marked as offline
+  - `tabs:change` - Tab configuration changed
+  - `theme:change` - Theme updated
+</ParamField>
+
+### Client Messages
+
+Send commands to Maestro via WebSocket:
+
+<CodeGroup>
+```json Execute Command
+{
+  "type": "execute",
+  "sessionId": "session-uuid",
+  "command": "Write a hello world function",
+  "inputMode": "ai"
+}
+```
+
+```json Switch Mode
+{
+  "type": "switchMode",
+  "sessionId": "session-uuid",
+  "mode": "terminal"
+}
+```
+
+```json Select Session
+{
+  "type": "selectSession",
+  "sessionId": "session-uuid",
+  "tabId": "tab-uuid"
+}
+```
+
+```json Get Session Detail
+{
+  "type": "getSessionDetail",
+  "sessionId": "session-uuid"
+}
+```
+</CodeGroup>
+
+## Rate Limiting
+
+The web server includes configurable rate limiting to prevent abuse:
+
+<ParamField path="max" type="number" default="100">
+  Maximum requests per minute for GET endpoints
+</ParamField>
+
+<ParamField path="maxPost" type="number" default="30">
+  Maximum requests per minute for POST endpoints
+</ParamField>
+
+<ParamField path="timeWindow" type="number" default="60000">
+  Time window in milliseconds (default: 1 minute)
+</ParamField>
+
+<Warning>
+Rate limit exceeded responses return HTTP 429 with a `Retry-After` header.
+</Warning>
+
+## Security
+
+<CardGroup cols={2}>
+  <Card title="Auto-generated Tokens" icon="key">
+    Security tokens are UUIDs regenerated on each app restart
+  </Card>
+  
+  <Card title="Invalid Token Handling" icon="shield">
+    Requests with invalid/missing tokens redirect to the Maestro website
+  </Card>
+  
+  <Card title="Local Network Only" icon="network-wired">
+    Server binds to 0.0.0.0 but is designed for local network access only
+  </Card>
+  
+  <Card title="No Persistent Authentication" icon="lock-open">
+    No user accounts or persistent auth - access is token-based only
+  </Card>
+</CardGroup>
+
+<Note>
+For secure public internet access, use the [Tunnel Manager](/api/tunnel-manager) to create a Cloudflare tunnel.
+</Note>
+
+## Implementation Details
+
+The web server is built with:
+
+- **Fastify** - High-performance HTTP framework
+- **@fastify/websocket** - WebSocket support
+- **@fastify/cors** - CORS handling
+- **@fastify/rate-limit** - Rate limiting
+
+Source: `src/main/web-server/WebServer.ts:1`
+
+## Related Resources
+
+- [Mobile & Remote Access](/power/mobile-remote)
+- [Tunnel Manager](/api/tunnel-manager)
+- [Session Discovery](/core/session-discovery)

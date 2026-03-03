@@ -1,0 +1,487 @@
+---
+title: Multi-Provider Setup
+description: Configure and run multiple AI providers (Claude Code, OpenCode, Codex) simultaneously in Maestro.
+---
+
+## Overview
+
+Maestro supports multiple AI providers, each with unique capabilities and strengths. You can run different providers side-by-side, switch between them for different tasks, or coordinate them in Group Chat.
+
+## Supported Providers
+
+Maestro currently supports:
+
+| Provider       | ID              | Binary        | Status     |
+| -------------- | --------------- | ------------- | ---------- |
+| Claude Code    | `claude-code`   | `claude`      | **Active** |
+| OpenCode       | `opencode`      | `opencode`    | **Active** |
+| Codex (OpenAI) | `codex`         | `codex`       | **Active** |
+| Factory Droid  | `factory-droid` | `droid`       | **Active** |
+| Terminal       | `terminal`      | (shell)       | Internal   |
+
+See [CLAUDE-AGENTS.md](src:///home/daytona/workspace/source/CLAUDE-AGENTS.md) for detailed capabilities.
+
+## Provider Detection
+
+Maestro automatically detects installed providers on startup:
+
+<Steps>
+  <Step title="Binary detection">
+    Maestro searches your `PATH` for provider binaries:
+    
+    ```bash
+    # Detection commands
+    which claude      # Claude Code
+    which opencode    # OpenCode
+    which codex       # Codex
+    which droid       # Factory Droid
+    ```
+  </Step>
+
+  <Step title="Capability discovery">
+    Each detected provider's capabilities are loaded:
+    
+    - Session resume support
+    - Image input support
+    - Cost tracking
+    - Slash commands
+    - Read-only mode
+  </Step>
+
+  <Step title="UI adaptation">
+    Maestro's UI adapts based on provider capabilities. Features are shown/hidden automatically.
+  </Step>
+</Steps>
+
+## Installing Providers
+
+### Claude Code
+
+```bash
+# Install via npm (official method)
+npm install -g @anthropic-ai/claude-code
+
+# Verify installation
+claude --version
+
+# Configure API key
+claude config
+```
+
+### OpenCode
+
+```bash
+# Install from GitHub releases
+curl -L https://github.com/opencode-ai/opencode/releases/latest/download/opencode-linux -o /usr/local/bin/opencode
+chmod +x /usr/local/bin/opencode
+
+# Verify installation
+opencode --version
+
+# Configure API key
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Codex (OpenAI)
+
+```bash
+# Install via npm
+npm install -g @openai/codex-cli
+
+# Verify installation
+codex --version
+
+# Authenticate
+codex login
+```
+
+<Warning>
+Maestro requires providers to be in your system PATH. Custom installation paths can be configured in Settings → Providers.
+</Warning>
+
+## Configuring Providers
+
+### Provider Settings
+
+Access provider configuration in **Settings → Providers**:
+
+<Steps>
+  <Step title="Open provider settings">
+    1. Press `Cmd+,` (Mac) or `Ctrl+,` (Windows/Linux)
+    2. Navigate to **Providers** tab (if available) or use **General** tab
+    3. Each detected provider has a configuration section
+  </Step>
+
+  <Step title="Configure custom paths">
+    If a provider is not in your PATH:
+    
+    1. Click **Set Custom Path** for the provider
+    2. Browse to the binary location
+    3. Click **Save**
+    4. Maestro will use this path instead of searching PATH
+  </Step>
+
+  <Step title="Add custom arguments">
+    Provider-specific CLI arguments are appended to all invocations:
+    
+    **Claude Code example:**
+    ```plaintext
+    --model claude-sonnet-4-20250514
+    ```
+    
+    **OpenCode example:**
+    ```plaintext
+    --model anthropic/claude-sonnet-4-20250514
+    ```
+    
+    **Codex example:**
+    ```plaintext
+    -m o3
+    ```
+  </Step>
+
+  <Step title="Set environment variables">
+    Provider-specific environment variables are passed to the agent process:
+    
+    ```bash
+    # Claude Code with custom config directory
+    CLAUDE_CONFIG_DIR=/path/to/custom/config
+    
+    # OpenCode with API key
+    ANTHROPIC_API_KEY=sk-ant-...
+    
+    # Codex with custom settings
+    OPENAI_API_KEY=sk-proj-...
+    ```
+  </Step>
+</Steps>
+
+### Global vs Provider-Specific Variables
+
+Maestro merges environment variables in this priority order:
+
+1. **Session-level overrides** (highest priority)
+2. **Global environment variables** (Settings → General → Shell Configuration)
+3. **Provider-specific variables** (Settings → Providers → [Provider] → Environment Variables)
+4. **System environment** (lowest priority)
+
+This allows you to:
+- Set `ANTHROPIC_API_KEY` globally for all Claude-based providers
+- Override with provider-specific keys for different accounts
+- Override again at session level for testing
+
+## Provider Capabilities
+
+### Claude Code
+
+```typescript
+{
+  supportsResume: true,
+  supportsReadOnlyMode: true,
+  supportsImageInput: true,
+  supportsSlashCommands: true,
+  supportsCostTracking: true,
+  supportsSessionStorage: true,
+  supportsBatchMode: true
+}
+```
+
+**Strengths:**
+- Full slash command support in batch mode
+- Comprehensive cost tracking
+- Session browsing and resume
+- MCP server integration
+- Rich thinking/reasoning display
+
+**Limitations:**
+- Model selection via Anthropic account (not CLI flag)
+- No mid-turn input in batch mode
+
+See [Provider Notes](/provider-notes#claude-code) for details.
+
+### OpenCode
+
+```typescript
+{
+  supportsResume: true,
+  supportsReadOnlyMode: true,
+  supportsImageInput: true,
+  supportsSlashCommands: false,
+  supportsCostTracking: true,
+  supportsSessionStorage: false,
+  supportsBatchMode: true
+}
+```
+
+**Strengths:**
+- Model selection via CLI flag
+- Per-step cost tracking
+- Fast execution
+- Image support on resume
+
+**Limitations:**
+- No native slash commands
+- No session browser
+
+See [Provider Notes](/provider-notes#opencode) for details.
+
+### Codex (OpenAI)
+
+```typescript
+{
+  supportsResume: true,
+  supportsReadOnlyMode: true,
+  supportsImageInput: true,  // new sessions only
+  supportsSlashCommands: false,
+  supportsCostTracking: false,  // token counts only
+  supportsSessionStorage: false,
+  supportsBatchMode: true
+}
+```
+
+**Strengths:**
+- Model selection via `-m` flag
+- Reasoning tokens display (o3/o4-mini)
+- OpenAI ecosystem integration
+
+**Limitations:**
+- Image input only on new sessions (not resume)
+- No cost tracking (only token counts)
+- Slash commands only in TUI mode
+
+See [Provider Notes](/provider-notes#codex-openai) for details.
+
+## Creating Agents with Different Providers
+
+<Steps>
+  <Step title="Create new agent">
+    Click the **+** button in the Left Panel
+  </Step>
+
+  <Step title="Select provider">
+    1. In the agent creation dialog, choose **Agent Type**
+    2. Only installed providers appear in the dropdown
+    3. Each provider shows an availability indicator
+  </Step>
+
+  <Step title="Configure agent">
+    Set agent-specific options:
+    
+    - **Working directory**: Project path
+    - **Model**: Provider-specific model selection (if supported)
+    - **Environment variables**: Agent-level overrides
+    - **Read-only mode**: Plan/preview mode (if supported)
+  </Step>
+
+  <Step title="Start using">
+    The agent spawns using the selected provider. UI features adapt to provider capabilities.
+  </Step>
+</Steps>
+
+## Switching Between Providers
+
+You cannot change a session's provider after creation, but you can:
+
+### Create parallel agents
+
+```plaintext
+Project/
+├── Agent 1 (Claude Code)   - Main development
+├── Agent 2 (OpenCode)      - Testing alternative approaches
+└── Agent 3 (Codex)         - OpenAI-specific features
+```
+
+Use Groups to organize multi-provider setups.
+
+### Transfer context between providers
+
+Use the Context Transfer feature:
+
+1. Select messages in the source agent
+2. Right-click → **Transfer to Another Session**
+3. Choose target agent (can be different provider)
+4. Context is exported and imported
+
+See [Context Management](/context-management) for details.
+
+## Multi-Provider Group Chat
+
+Coordinate agents from different providers in Group Chat:
+
+<CodeGroup>
+```plaintext Example Group
+Group: "Full Stack Team"
+├── Claude Code Agent    - Backend implementation
+├── OpenCode Agent       - Frontend React work
+└── Codex Agent          - AI/ML model integration
+```
+
+```plaintext Workflow
+1. User: "Build a user dashboard with real-time analytics"
+2. Moderator routes:
+   - Backend → Claude Code agent
+   - Frontend → OpenCode agent
+   - Analytics → Codex agent
+3. Agents work in parallel
+4. Moderator synthesizes results
+```
+</CodeGroup>
+
+See [Group Chat](/group-chat) for setup instructions.
+
+## SSH Remote Providers
+
+Run providers on remote machines via SSH:
+
+<Steps>
+  <Step title="Configure SSH remote">
+    **Settings → SSH Hosts → Add SSH Remote**
+    
+    - Hostname/IP
+    - Port (default: 22)
+    - Username
+    - Private key path
+  </Step>
+
+  <Step title="Detect remote providers">
+    Maestro automatically detects providers installed on the remote host
+  </Step>
+
+  <Step title="Create remote agent">
+    When creating an agent:
+    
+    1. Toggle **SSH Remote Execution**
+    2. Select the configured SSH remote
+    3. Choose provider from those available on remote
+  </Step>
+</Steps>
+
+Remote providers support all local features:
+- Auto Run playbooks
+- Group Chat participation
+- Context operations
+- Worktree integration
+
+See [SSH Remote Execution](/ssh-remote-execution) for details.
+
+## Provider-Specific Workflows
+
+### Claude Code: MCP-Powered Development
+
+```plaintext
+1. Configure MCP servers in ~/.claude/config.json
+2. Create Claude Code agent
+3. Use /skills to list available skills
+4. Leverage MCP tools in prompts
+```
+
+### OpenCode: Multi-Model Experimentation
+
+```plaintext
+1. Create multiple OpenCode agents
+2. Each uses different model via custom args:
+   - Agent 1: --model anthropic/claude-sonnet-4
+   - Agent 2: --model anthropic/claude-opus-4
+   - Agent 3: --model openai/gpt-4
+3. Compare approaches in parallel
+```
+
+### Codex: OpenAI Reasoning Models
+
+```plaintext
+1. Create Codex agent with custom args: -m o3
+2. Use for complex reasoning tasks
+3. Monitor reasoning tokens in usage stats
+4. Compare with Claude Code for same task
+```
+
+## Troubleshooting
+
+### Provider not detected
+
+<Accordion title="Check PATH">
+  ```bash
+  # Verify binary is in PATH
+  which claude
+  which opencode
+  which codex
+  
+  # If not found, add to PATH or use custom path in settings
+  export PATH="/usr/local/bin:$PATH"
+  ```
+</Accordion>
+
+<Accordion title="Refresh detection">
+  **Settings → General → Check for Updates** or restart Maestro to re-detect providers.
+</Accordion>
+
+<Accordion title="Custom path not working">
+  Ensure:
+  - Path points to the binary itself (not a directory)
+  - Binary has execute permissions: `chmod +x /path/to/binary`
+  - Path is absolute (not relative)
+</Accordion>
+
+### Provider-specific errors
+
+<Accordion title="Authentication errors">
+  Each provider has different auth requirements:
+  
+  - **Claude Code**: `claude config` to set API key
+  - **OpenCode**: `ANTHROPIC_API_KEY` environment variable
+  - **Codex**: `codex login` to authenticate
+</Accordion>
+
+<Accordion title="Model not available">
+  Verify model name matches provider's expected format:
+  
+  - **Claude Code**: Configured via Anthropic account
+  - **OpenCode**: `--model provider/model-name`
+  - **Codex**: `-m model-name`
+</Accordion>
+
+<Accordion title="Features not working">
+  Some features are provider-specific. Check [Provider Notes](/provider-notes) for limitations.
+</Accordion>
+
+## Best Practices
+
+<Note>
+**Use the right provider for the task:**
+
+- **Claude Code** - MCP integration, full slash commands, cost tracking
+- **OpenCode** - Model flexibility, fast execution, simple workflows
+- **Codex** - OpenAI models, reasoning tokens, OpenAI-specific features
+</Note>
+
+<Tip>
+**Organize with groups:**
+
+Create groups by provider or by project, depending on your workflow:
+
+```plaintext
+By Provider:
+├── Claude Code Agents
+├── OpenCode Agents
+└── Codex Agents
+
+By Project:
+├── Project A (mixed providers)
+├── Project B (mixed providers)
+└── Experiments (mixed providers)
+```
+</Tip>
+
+<Warning>
+**Global environment variables affect all providers:**
+
+If you set `ANTHROPIC_API_KEY` globally, both Claude Code and OpenCode will use it. Use provider-specific variables for different accounts.
+</Warning>
+
+## Related Documentation
+
+- [Provider Notes](/provider-notes) - Feature comparison matrix
+- [Configuration](/configuration) - Settings management
+- [SSH Remote Execution](/ssh-remote-execution) - Remote provider setup
+- [Group Chat](/group-chat) - Multi-provider coordination
+- [AGENT_SUPPORT.md](src:///home/daytona/workspace/source/AGENT_SUPPORT.md) - Developer integration guide

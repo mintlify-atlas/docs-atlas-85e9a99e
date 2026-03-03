@@ -1,0 +1,257 @@
+---
+title: Installation
+description: Download and install Maestro on macOS, Windows, or Linux. Build from source or download pre-built binaries.
+---
+
+# Installation
+
+Get Maestro up and running on your platform of choice. Download pre-built binaries or build from source.
+
+## Download Pre-Built Binaries
+
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/RunMaestro/Maestro/releases):
+
+<CardGroup cols={3}>
+  <Card title="macOS" icon="apple">
+    **DMG** or **ZIP**
+    
+    Available for both Intel and Apple Silicon (M1/M2/M3)
+    
+    Choose the appropriate architecture:
+    - `maestro-{version}-arm64-mac.dmg` (Apple Silicon)
+    - `maestro-{version}-x64-mac.dmg` (Intel)
+  </Card>
+  
+  <Card title="Windows" icon="windows">
+    **EXE Installer** or **Portable EXE**
+    
+    - `Maestro-Setup-{version}-x64.exe` (Installer)
+    - `Maestro-Portable-{version}-x64.exe` (No installation required)
+  </Card>
+  
+  <Card title="Linux" icon="linux">
+    **AppImage**, **DEB**, or **RPM**
+    
+    - `maestro-{version}-x64.AppImage`
+    - `maestro-{version}-amd64.deb`
+    - `maestro-{version}-x86_64.rpm`
+  </Card>
+</CardGroup>
+
+### Platform-Specific Installation
+
+<Tabs>
+  <Tab title="macOS">
+    **Using DMG:**
+    1. Download the appropriate `.dmg` file for your processor
+    2. Open the DMG file
+    3. Drag Maestro.app to your Applications folder
+    4. Launch Maestro from Applications
+    
+    **Using ZIP:**
+    1. Download and extract the `.zip` file
+    2. Move Maestro.app to Applications
+    3. Launch from Applications
+    
+    <Note>
+    First launch may show a security warning. Go to **System Settings → Privacy & Security** and click "Open Anyway".
+    </Note>
+  </Tab>
+  
+  <Tab title="Windows">
+    **Using Installer:**
+    1. Download `Maestro-Setup-{version}-x64.exe`
+    2. Run the installer
+    3. Follow the installation wizard
+    4. Launch from Start Menu or Desktop shortcut
+    
+    **Using Portable:**
+    1. Download `Maestro-Portable-{version}-x64.exe`
+    2. Run directly - no installation required
+    3. Keep in a folder you can access regularly
+    
+    <Warning>
+    Windows may show a SmartScreen warning. Click "More info" then "Run anyway" to proceed.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Linux">
+    **Using AppImage:**
+    ```bash
+    # Make executable
+    chmod +x maestro-{version}-x64.AppImage
+    
+    # Run directly
+    ./maestro-{version}-x64.AppImage
+    ```
+    
+    **Using DEB (Debian/Ubuntu):**
+    ```bash
+    sudo dpkg -i maestro-{version}-amd64.deb
+    
+    # If dependencies are missing
+    sudo apt-get install -f
+    ```
+    
+    **Using RPM (Fedora/RHEL):**
+    ```bash
+    sudo rpm -i maestro-{version}-x86_64.rpm
+    
+    # Or using dnf
+    sudo dnf install maestro-{version}-x86_64.rpm
+    ```
+  </Tab>
+</Tabs>
+
+## Requirements
+
+<Note>
+**At least one supported AI coding agent** must be installed and authenticated:
+</Note>
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) - Anthropic's AI coding assistant (fully integrated)
+- [OpenAI Codex](https://github.com/openai/codex) - OpenAI's coding agent (fully integrated)
+- [OpenCode](https://github.com/sst/opencode) - Open-source AI coding assistant (fully integrated)
+- [Factory Droid](https://docs.factory.ai/cli) - Factory's AI coding assistant (fully integrated)
+
+**Optional:**
+- Git (for git-aware features like diffs, logs, and worktrees)
+
+<Info>
+Maestro is a pass-through to your provider. Your MCP tools, custom skills, permissions, and authentication all work in Maestro exactly as they do when running the provider directly—Maestro just orchestrates the conversation flow in batch mode.
+</Info>
+
+## Upgrading Maestro
+
+Upgrading is simple:
+
+1. Download the new version
+2. Replace the old binary with the new one
+3. Launch Maestro
+
+**All your data persists** across upgrades:
+- Sessions and conversation history
+- Settings and preferences  
+- Playbooks and Auto Run documents
+- Custom themes and keyboard shortcuts
+
+Configuration is stored in:
+- **macOS**: `~/Library/Application Support/maestro/`
+- **Windows**: `%APPDATA%\maestro\`
+- **Linux**: `~/.config/maestro/`
+
+## Building from Source
+
+Prefer to build Maestro yourself? You'll need Node.js 22.0.0 or higher.
+
+<Steps>
+  <Step title="Verify Node.js version">
+    ```bash
+    node --version  # Should be v22.0.0 or higher
+    ```
+    
+    If you need to install Node.js, visit [nodejs.org](https://nodejs.org).
+  </Step>
+  
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/RunMaestro/Maestro.git
+    cd Maestro
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+    
+    This will also rebuild native modules (`node-pty`, `better-sqlite3`) for your platform.
+  </Step>
+  
+  <Step title="Run in development mode">
+    ```bash
+    npm run dev
+    ```
+    
+    This starts Maestro with hot reload. The app will use an isolated data directory (`maestro-dev/`) so you can run it alongside a production install.
+  </Step>
+  
+  <Step title="Build for production (optional)">
+    ```bash
+    # Build all components
+    npm run build
+    
+    # Package for your platform
+    npm run package        # All platforms
+    npm run package:mac    # macOS only
+    npm run package:win    # Windows only  
+    npm run package:linux  # Linux only
+    ```
+    
+    Built packages will be in the `release/` directory.
+  </Step>
+</Steps>
+
+<Warning>
+Building from source requires native module compilation:
+- **Windows**: [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+- **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+- **Linux**: `build-essential` package (usually pre-installed)
+</Warning>
+
+## WSL2 Users (Windows Subsystem for Linux)
+
+<Warning>
+When using WSL2, **always clone and run from the native Linux filesystem** (e.g., `/home/username/maestro`), NOT from Windows-mounted paths (`/mnt/c/...`, `/mnt/d/...`).
+</Warning>
+
+Using Windows mounts causes critical issues:
+
+| Issue | Symptom |
+|-------|--------|
+| Socket binding failures | `EPERM: operation not permitted` when starting dev server |
+| Electron sandbox crashes | `FATAL:sandbox_host_linux.cc` errors |
+| npm install failures | Timeouts, `ENOTEMPTY` rename errors |
+| Git corruption | Missing index files, spurious lock files |
+
+### Recommended WSL2 Setup
+
+```bash
+# Clone to Linux filesystem (not /mnt/...)
+cd ~
+git clone https://github.com/RunMaestro/Maestro.git
+cd Maestro
+
+# Install dependencies
+npm install
+
+# Run in development mode
+npm run dev
+```
+
+### Accessing Files from Windows
+
+Browse your WSL2 files from Windows Explorer:
+
+```
+\\wsl$\Ubuntu\home\<username>\Maestro
+```
+
+### Troubleshooting WSL2
+
+If you encounter `electron-rebuild` failures, set the temp directory:
+
+```bash
+TMPDIR=/tmp npm install
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get from installation to your first productive session
+  </Card>
+  <Card title="Features Overview" icon="sparkles" href="/features-overview">
+    Explore all the power features and capabilities
+  </Card>
+</CardGroup>

@@ -1,0 +1,301 @@
+---
+title: "Group Chat"
+description: "Multi-agent collaboration with group conversations and moderator orchestration"
+---
+
+## Overview
+
+Group Chat enables multiple AI agents to collaborate on tasks through orchestrated conversations. A moderator manages turn-taking and ensures productive dialogue.
+
+<Info>
+  Group Chat brings together multiple agents with different capabilities to solve complex problems through conversation.
+</Info>
+
+## Creating a Group Chat
+
+<Steps>
+  <Step title="Open Group Chat Panel">
+    Click the Group Chat button or press the keyboard shortcut
+  </Step>
+  
+  <Step title="Select Participants">
+    Choose 2 or more agents from your available sessions:
+    
+    - Agents must be in "ready" state
+    - Can include agents with different providers (Claude, Codex, etc.)
+    - Each agent brings unique capabilities
+  </Step>
+  
+  <Step title="Name Your Group">
+    Provide a descriptive name for the conversation
+  </Step>
+  
+  <Step title="Start Chatting">
+    Send messages and watch agents collaborate
+  </Step>
+</Steps>
+
+## Architecture
+
+### Participants
+
+Each participant in a group chat is an active agent:
+
+```typescript
+interface GroupChatParticipant {
+  sessionId: string          // Agent session ID
+  role: 'participant'        // All participants have equal role
+  joinedAt: number          // Timestamp
+}
+```
+
+### Moderator
+
+The moderator orchestrates conversation flow:
+
+- **Turn Management** - Decides which agent speaks next
+- **Context Awareness** - Provides conversation history to each agent
+- **Termination** - Ends conversation when task is complete
+
+```typescript
+// Moderator selection logic
+const moderator = new GroupChatModerator({
+  participants,
+  maxTurns: 20,              // Prevent infinite loops
+  temperature: 0.7           // Response creativity
+})
+```
+
+### Message Flow
+
+<Steps>
+  <Step title="User Sends Message">
+    Message added to conversation history
+  </Step>
+  
+  <Step title="Moderator Selects Speaker">
+    Analyzes conversation and chooses next agent
+  </Step>
+  
+  <Step title="Agent Responds">
+    Selected agent receives full context and replies
+  </Step>
+  
+  <Step title="Repeat">
+    Process continues until task completion or max turns
+  </Step>
+</Steps>
+
+## Group Chat State
+
+```typescript
+type GroupChatState = 
+  | 'idle'           // Waiting for input
+  | 'moderating'     // Moderator selecting next speaker
+  | 'speaking'       // Agent is responding
+  | 'error'         // Error occurred
+```
+
+### State Indicators
+
+<Tabs>
+  <Tab title="Idle">
+    ⚪ Ready for user input
+  </Tab>
+  
+  <Tab title="Moderating">
+    🟡 Moderator is selecting next speaker
+  </Tab>
+  
+  <Tab title="Speaking">
+    🟢 Agent is actively responding
+  </Tab>
+  
+  <Tab title="Error">
+    🔴 Error occurred, check logs
+  </Tab>
+</Tabs>
+
+## Features
+
+### Participant Colors
+
+Each participant gets a consistent color for visual distinction:
+
+```typescript
+participantColors: Record<string, string>
+
+// Example assignments
+{
+  "agent-1": "#3B82F6",  // Blue
+  "agent-2": "#10B981",  // Green  
+  "agent-3": "#F59E0B"   // Orange
+}
+```
+
+### Message Types
+
+<CodeGroup>
+```typescript User Message
+{
+  type: 'user',
+  content: 'How should we structure this feature?',
+  images: [],
+  timestamp: 1234567890
+}
+```
+
+```typescript Agent Message
+{
+  type: 'agent',
+  content: 'I suggest we start with the data model...',
+  participantId: 'agent-1',
+  timestamp: 1234567891
+}
+```
+
+```typescript System Message
+{
+  type: 'system',
+  content: 'Agent 2 has joined the conversation',
+  timestamp: 1234567892
+}
+```
+</CodeGroup>
+
+### Read-Only Mode
+
+Send messages that agents can see but don't respond to:
+
+```typescript
+onSendMessage(content, images, readOnly: true)
+```
+
+<Note>
+  Read-only messages are useful for providing context without triggering agent responses.
+</Note>
+
+## Cost Tracking
+
+Group chats aggregate costs from all participants:
+
+```typescript
+totalCost: number              // Sum of all participant costs
+costIncomplete: boolean        // True if any agent lacks cost data
+```
+
+Costs appear in the header with an incomplete indicator if not all agents support cost tracking.
+
+## Input Panel
+
+The input panel supports:
+
+- **Text input** with multi-line support
+- **Image attachments** via paste or drag-and-drop
+- **Staged images** preview before sending
+- **Read-only toggle** for context messages
+- **Execution queue** indicator when messages are queued
+
+```typescript
+interface GroupChatInputProps {
+  onSend: (content: string, images?: string[], readOnly?: boolean) => void
+  stagedImages?: string[]
+  setStagedImages?: (images: string[]) => void
+  readOnlyMode?: boolean
+  setReadOnlyMode?: (value: boolean) => void
+  executionQueue?: QueuedItem[]
+}
+```
+
+## Message Queue Integration
+
+Group chat integrates with the execution queue:
+
+- Messages queue when moderator/agents are busy
+- Visual indicator shows queue count
+- Drag-and-drop reordering support
+- Per-agent queue isolation prevents conflicts
+
+<Warning>
+  If multiple group chats target the same agent, messages will queue sequentially to prevent file conflicts.
+</Warning>
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message (if Enter-to-send enabled) |
+| `Shift+Enter` | New line in message |
+| `Cmd+E` | Toggle markdown edit mode |
+| `Cmd+V` | Paste images |
+
+## Use Cases
+
+### Code Review
+
+```
+Participants:
+- Claude (architecture analysis)
+- Codex (code quality)
+- OpenCode (security review)
+
+User: "Review this authentication implementation"
+[Paste code]
+
+Each agent provides expertise-specific feedback
+```
+
+### Documentation
+
+```
+Participants:
+- Doc Writer (content creation)
+- Tech Reviewer (accuracy)
+- Editor (style & clarity)
+
+Iterative refinement through conversation
+```
+
+### Problem Solving
+
+```
+Participants:
+- Research Agent (gather information)
+- Analysis Agent (evaluate options)
+- Decision Agent (recommend solution)
+
+Structured problem-solving workflow
+```
+
+## Performance Considerations
+
+Group chats create multiple concurrent agent sessions:
+
+```typescript
+// Each agent maintains its own context
+const contextPerAgent = messages.map(m => ({
+  role: m.type === 'user' ? 'user' : 'assistant',
+  content: m.content
+}))
+
+// Moderator sees full conversation
+const moderatorContext = fullConversationHistory
+```
+
+<Info>
+  Token usage and costs multiply with participant count. Use focused groups for efficiency.
+</Info>
+
+## SSH Remote Support
+
+Group chat works with SSH remote agents:
+
+- Remote agents spawn on remote host
+- Local coordination by moderator
+- Mixed local/remote participants supported
+
+## Related Features
+
+- [Message Queue](/power/message-queueing) - Understand execution sequencing
+- [Agent Management](/features/agents) - Configure agent capabilities
+- [Analytics Dashboard](/analytics/usage-dashboard) - Track group chat usage

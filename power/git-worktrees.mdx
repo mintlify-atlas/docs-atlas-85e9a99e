@@ -1,0 +1,198 @@
+---
+title: "Git Worktrees"
+description: "Use Git worktrees for parallel development with Auto Run and batch processing"
+---
+
+## Overview
+
+Git worktrees enable parallel development by creating separate working directories for different branches within the same repository. In Maestro, worktrees are integrated with the Auto Run and batch processing system to allow safe concurrent work without file conflicts.
+
+<Info>
+  Git worktrees create isolated workspace directories for different branches, allowing you to run Auto Run on multiple branches simultaneously without conflicts.
+</Info>
+
+## Prerequisites
+
+<Steps>
+  <Step title="Install GitHub CLI">
+    Worktree features require the GitHub CLI for branch management and PR creation.
+    
+    ```bash
+    # macOS
+    brew install gh
+    
+    # Windows
+    winget install GitHub.cli
+    
+    # Linux
+    sudo apt install gh
+    ```
+  </Step>
+  
+  <Step title="Authenticate GitHub CLI">
+    Run authentication to enable PR creation features:
+    
+    ```bash
+    gh auth login
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+Worktrees are configured in the Batch Runner modal when setting up an Auto Run:
+
+### Basic Setup
+
+1. **Enable Worktree** - Toggle the worktree checkbox
+2. **Worktree Directory** - Choose a base directory where worktrees will be created
+3. **Branch Name** - Specify the branch name for this worktree
+4. **Computed Path** - Review the full path: `baseDir/branchName`
+
+<CodeGroup>
+```typescript GitWorktreeSection.tsx
+// Worktree configuration state
+worktreeEnabled: boolean
+worktreeBaseDir: string        // User-selected base directory  
+computedWorktreePath: string   // baseDir + branchName (read-only)
+branchName: string
+createPROnCompletion: boolean
+prTargetBranch: string
+```
+</CodeGroup>
+
+### Validation States
+
+Maestro validates worktree configuration before starting:
+
+<Tabs>
+  <Tab title="Valid">
+    ✅ Existing worktree on same branch - continues work
+    
+    ✅ New worktree location - creates fresh worktree
+  </Tab>
+  
+  <Tab title="Warning">
+    ⚠️ Worktree exists with different branch - will checkout to new branch
+    
+    <Warning>
+      If the existing worktree has uncommitted changes, checkout will fail.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Error">
+    ❌ Worktree belongs to different repository - choose different path
+  </Tab>
+</Tabs>
+
+## Pull Request Creation
+
+When GitHub CLI is authenticated, you can enable automatic PR creation:
+
+```typescript
+createPROnCompletion: true
+prTargetBranch: 'main'  // Dropdown of available branches
+```
+
+<Steps>
+  <Step title="Auto Run Completes">
+    Batch processing finishes successfully
+  </Step>
+  
+  <Step title="Changes Committed">
+    All Auto Run changes are committed to the worktree branch
+  </Step>
+  
+  <Step title="Branch Pushed">
+    Worktree branch is pushed to remote
+  </Step>
+  
+  <Step title="PR Created">
+    GitHub PR is created targeting the specified branch
+  </Step>
+</Steps>
+
+## Benefits
+
+### Parallel Development
+
+Run Auto Run on multiple branches simultaneously:
+
+- Main branch: Production documentation
+- Feature branch: New feature docs via worktree
+- No file conflicts between the two
+
+### Safe Experimentation
+
+Worktrees provide isolation:
+
+```bash
+# Original repo remains untouched
+~/projects/my-app/
+
+# Worktree for Auto Run
+~/worktrees/docs-update/  # Separate directory, same repo
+```
+
+### Automated Workflow
+
+Complete workflow from changes to PR:
+
+1. Configure worktree and branch
+2. Run batch Auto Run
+3. Review generated changes
+4. Automatic commit, push, and PR creation
+
+## SSH Remote Support
+
+Worktrees work with SSH remote sessions:
+
+<Note>
+  For remote sessions, enter the path on the remote server. The Browse button is disabled for SSH remotes.
+</Note>
+
+```typescript
+// Remote session configuration
+sshRemoteId: string
+
+// Path on remote server
+worktreeBaseDir: '/home/user/worktrees'
+```
+
+## Example Workflow
+
+<Steps>
+  <Step title="Open Batch Runner">
+    Select documents for Auto Run batch processing
+  </Step>
+  
+  <Step title="Enable Worktree">
+    ```
+    ✓ Enable Worktree
+    Directory: /Users/you/worktrees
+    Branch: feature/update-docs
+    Computed: /Users/you/worktrees/feature/update-docs
+    ```
+  </Step>
+  
+  <Step title="Configure PR">
+    ```
+    ✓ Create PR on completion
+    Target: main
+    ```
+  </Step>
+  
+  <Step title="Run Batch">
+    Auto Run processes all documents in the worktree
+  </Step>
+  
+  <Step title="Review PR">
+    PR is automatically created with all changes
+  </Step>
+</Steps>
+
+## Related Features
+
+- [Auto Run Playbooks](/power/auto-run-playbooks) - Save worktree configurations in playbooks
+- [CLI Tool](/power/cli-tool) - Run playbooks with worktrees from command line
+- [Batch Processing](/features/auto-run#batch-processing) - Process multiple documents

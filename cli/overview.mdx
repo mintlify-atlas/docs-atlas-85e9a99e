@@ -1,0 +1,235 @@
+---
+title: CLI Overview
+description: Command-line interface for Maestro automation, batch processing, and agent orchestration
+---
+
+The Maestro CLI provides powerful command-line tools for automating AI agents, running playbooks in batch mode, and managing agents programmatically. Perfect for CI/CD pipelines, scripting, and headless automation.
+
+## Installation
+
+The Maestro CLI is included with the Maestro desktop application. Access it via:
+
+```bash
+maestro-cli --version
+```
+
+<Note>
+  The CLI reads agent configurations from the Maestro desktop app's storage. Ensure you've created and configured agents in the desktop app before using CLI commands.
+</Note>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Batch Playbook Execution" icon="play">
+    Run playbooks headlessly with full automation support
+  </Card>
+  <Card title="Agent Messaging" icon="message">
+    Send messages to agents and get JSON responses
+  </Card>
+  <Card title="JSONL Output" icon="code">
+    Machine-readable output for scripting and parsing
+  </Card>
+  <Card title="Session Management" icon="history">
+    List agents, groups, playbooks, and sessions
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+### List All Agents
+
+```bash
+maestro-cli list agents
+```
+
+**Output:**
+```
+AGENTS (3)
+
+  Backend Engineer claude-code [Auto Run]
+      /Users/dev/projects/api-server
+      a1b2c3d4-...
+
+  Frontend Dev codex
+      /Users/dev/projects/web-app
+      e5f6g7h8-...
+```
+
+### Run a Playbook
+
+```bash
+maestro-cli playbook abc123 --json
+```
+
+Streams execution events in JSONL format:
+
+```json
+{"type":"start","timestamp":1709472000000}
+{"type":"task_start","document":"Phase-01.md","taskIndex":0}
+{"type":"task_complete","success":true,"summary":"Created API endpoint"}
+{"type":"complete","totalTasksCompleted":12}
+```
+
+### Send Message to Agent
+
+```bash
+maestro-cli send a1b2c3 "Add error handling to the login endpoint"
+```
+
+**Response:**
+```json
+{
+  "agentId": "a1b2c3d4-...",
+  "agentName": "Backend Engineer",
+  "sessionId": "sess_xyz",
+  "response": "I've added comprehensive error handling...",
+  "success": true,
+  "usage": {
+    "inputTokens": 1250,
+    "outputTokens": 890,
+    "totalCostUsd": 0.0045
+  }
+}
+```
+
+## Command Categories
+
+### List Commands
+
+Query agents, groups, playbooks, and sessions:
+
+```bash
+maestro-cli list groups
+maestro-cli list agents --group <id>
+maestro-cli list playbooks --agent <id>
+maestro-cli list sessions <agent-id>
+```
+
+### Show Commands
+
+Detailed information about specific resources:
+
+```bash
+maestro-cli show agent <id>
+maestro-cli show playbook <id>
+```
+
+### Playbook Execution
+
+Run playbooks with various options:
+
+```bash
+maestro-cli playbook <id> [options]
+```
+
+<ParamField path="--json" type="boolean">
+  Output JSONL events for scripting
+</ParamField>
+
+<ParamField path="--dry-run" type="boolean">
+  Preview execution without making changes
+</ParamField>
+
+<ParamField path="--no-history" type="boolean">
+  Skip writing history entries
+</ParamField>
+
+<ParamField path="--wait" type="boolean">
+  Wait for agent to become available if busy
+</ParamField>
+
+<ParamField path="--debug" type="boolean">
+  Show detailed debug information
+</ParamField>
+
+<ParamField path="--verbose" type="boolean">
+  Show full prompts sent to agents
+</ParamField>
+
+### Send Command
+
+Direct agent messaging for one-off tasks:
+
+```bash
+maestro-cli send <agent-id> <message> [options]
+```
+
+<ParamField path="-s, --session" type="string">
+  Resume existing session for multi-turn conversations
+</ParamField>
+
+### Clean Commands
+
+Maintenance operations:
+
+```bash
+maestro-cli clean playbooks --dry-run
+```
+
+## Output Formats
+
+All commands support two output modes:
+
+### Human-Readable (Default)
+
+Colorful, formatted terminal output:
+
+```bash
+maestro-cli list agents
+```
+
+### JSON/JSONL (Scripting)
+
+Machine-parseable structured data:
+
+```bash
+maestro-cli list agents --json
+maestro-cli playbook abc123 --json  # JSONL stream
+```
+
+<Info>
+  Use `--json` flag on any command to get structured output suitable for parsing with `jq`, scripts, or other tools.
+</Info>
+
+## Agent ID Resolution
+
+All commands support **partial ID matching**:
+
+```bash
+# Full ID
+maestro-cli show agent a1b2c3d4-5e6f-7g8h-9i0j-k1l2m3n4o5p6
+
+# Partial ID (first 6+ chars)
+maestro-cli show agent a1b2c3
+
+# Also works for playbooks and groups
+maestro-cli playbook abc
+```
+
+<Warning>
+  If the partial ID matches multiple resources, the CLI will show an error listing all matches. Provide more characters to uniquely identify the resource.
+</Warning>
+
+## Exit Codes
+
+The CLI uses standard exit codes:
+
+- `0` - Success
+- `1` - Error (check stderr for details)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CLI Commands" icon="terminal" href="/cli/commands">
+    Complete reference for all commands and options
+  </Card>
+  <Card title="Automation Patterns" icon="robot" href="/cli/automation">
+    Workflows and patterns for automated agent orchestration
+  </Card>
+  <Card title="Scripting Guide" icon="file-code" href="/cli/scripting">
+    Parse JSONL output and integrate with your tools
+  </Card>
+  <Card title="Playbooks" icon="book" href="/power/auto-run-playbooks">
+    Learn about Auto Run playbooks and batch execution
+  </Card>
+</CardGroup>

@@ -1,0 +1,254 @@
+---
+title: Spec-Kit Commands
+description: Specification-driven development workflow with AI-generated implementation checklists
+---
+
+Spec-Kit is a prompt library for specification-driven development. It helps you analyze requirements, create detailed specs, and generate implementation checklists that can be automated with Auto Run.
+
+## What is Spec-Kit?
+
+Spec-Kit provides a structured workflow for breaking down complex features into actionable tasks:
+
+1. **Analyze** - Understand the problem space
+2. **Specify** - Create detailed specifications
+3. **Plan** - Generate implementation tasks
+4. **Checklist** - Convert to Auto Run format
+5. **Implement** - Execute tasks with AI assistance
+
+## Available Commands
+
+Spec-Kit commands are accessed via slash commands in the AI terminal:
+
+### /speckit:help
+
+Show available Spec-Kit commands and usage examples.
+
+```
+/speckit:help
+```
+
+### /speckit:analyze
+
+Analyze a feature request or problem to understand requirements, constraints, and edge cases.
+
+```
+/speckit:analyze Add user authentication to the dashboard
+```
+
+**What it does:**
+- Extracts core requirements
+- Identifies edge cases and error scenarios
+- Lists technical constraints
+- Suggests alternatives and tradeoffs
+
+### /speckit:clarify
+
+Ask clarifying questions about ambiguous requirements.
+
+```
+/speckit:clarify The search feature should be fast
+```
+
+**What it does:**
+- Identifies unclear or ambiguous requirements
+- Generates specific questions to resolve ambiguity
+- Suggests concrete acceptance criteria
+
+### /speckit:specify
+
+Generate a detailed technical specification document.
+
+```
+/speckit:specify Implement real-time notifications
+```
+
+**Output format:**
+- Problem statement
+- Requirements (functional and non-functional)
+- Technical design
+- API contracts
+- Database schema changes
+- Security considerations
+- Testing strategy
+
+### /speckit:plan
+
+Create a high-level implementation plan with milestones.
+
+```
+/speckit:plan Migrate to new authentication system
+```
+
+**What it does:**
+- Breaks work into phases
+- Identifies dependencies
+- Estimates complexity
+- Suggests rollout strategy
+
+### /speckit:tasks
+
+Generate granular implementation tasks from a specification.
+
+```
+/speckit:tasks [paste your specification here]
+```
+
+**Output format:**
+- Numbered task list
+- Each task is atomic and testable
+- Tasks are ordered by dependency
+- Includes testing and documentation tasks
+
+### /speckit:checklist
+
+Convert tasks into Auto Run checklist format.
+
+```
+/speckit:checklist [paste task list here]
+```
+
+**Output:**
+Markdown checklist ready for Auto Run:
+```markdown
+## Implementation Checklist
+
+- [ ] Task 1: Set up authentication routes
+- [ ] Task 2: Create user model
+- [ ] Task 3: Implement password hashing
+```
+
+### /speckit:taskstoissues
+
+Convert task list to GitHub/GitLab issue format.
+
+```
+/speckit:taskstoissues [paste task list here]
+```
+
+### /speckit:implement
+
+Generate implementation code for a specific task.
+
+```
+/speckit:implement Task: Add JWT token validation middleware
+```
+
+### /speckit:constitution
+
+Review code against project coding standards and best practices.
+
+```
+/speckit:constitution [paste code here]
+```
+
+## Workflow Example
+
+<Steps>
+  <Step title="Analyze the requirement">
+    ```
+    /speckit:analyze Add real-time collaboration to the document editor
+    ```
+    
+    Review the analysis output to understand scope and complexity.
+  </Step>
+
+  <Step title="Clarify ambiguities">
+    ```
+    /speckit:clarify What does 'real-time' mean in terms of latency?
+    ```
+    
+    Answer the questions to refine requirements.
+  </Step>
+
+  <Step title="Generate specification">
+    ```
+    /speckit:specify Implement WebSocket-based real-time collaboration
+    with operational transformation for conflict resolution
+    ```
+    
+    Save the specification document to a file.
+  </Step>
+
+  <Step title="Create implementation plan">
+    ```
+    /speckit:plan [paste specification]
+    ```
+    
+    Review milestones and adjust scope if needed.
+  </Step>
+
+  <Step title="Generate task list">
+    ```
+    /speckit:tasks [paste specification]
+    ```
+    
+    Get a detailed, ordered list of implementation tasks.
+  </Step>
+
+  <Step title="Convert to checklist">
+    ```
+    /speckit:checklist [paste task list]
+    ```
+    
+    Save the output as a markdown file (e.g., `collab-tasks.md`).
+  </Step>
+
+  <Step title="Run with Auto Run">
+    Enable Auto Run in the right panel, select your checklist file, and start execution.
+  </Step>
+</Steps>
+
+## Integration with Auto Run
+
+Spec-Kit is designed to work seamlessly with Auto Run:
+
+1. Use `/speckit:checklist` to generate Auto Run-compatible markdown
+2. Save the checklist to a `.md` file in your workspace
+3. Select it in the Auto Run panel
+4. Each task becomes a separate AI session with clean context
+
+<Note>
+**Best Practice**: Keep tasks atomic (30-60 minutes each) for optimal Auto Run performance.
+</Note>
+
+## Customization
+
+Spec-Kit prompts are stored in `src/prompts/speckit/` and can be customized:
+
+- `speckit.analyze.md` - Analysis template
+- `speckit.specify.md` - Specification format
+- `speckit.checklist.md` - Checklist conversion
+- `speckit.implement.md` - Implementation guidance
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Start with analysis">
+    Always run `/speckit:analyze` first to understand the full scope before diving into implementation.
+  </Accordion>
+
+  <Accordion title="Clarify before specifying">
+    Use `/speckit:clarify` to resolve ambiguities early. It's faster to ask questions than to refactor later.
+  </Accordion>
+
+  <Accordion title="Keep specifications focused">
+    Break large features into multiple smaller specs. Each spec should fit in a single Auto Run session.
+  </Accordion>
+
+  <Accordion title="Review generated tasks">
+    AI-generated task lists are starting points. Review and adjust based on your codebase and constraints.
+  </Accordion>
+
+  <Accordion title="Iterate on checklists">
+    Run `/speckit:tasks` multiple times with refined specifications to get better task breakdowns.
+  </Accordion>
+</AccordionGroup>
+
+<CardGroup cols={2}>
+  <Card title="OpenSpec Commands" icon="file-code" href="/cli/openspec-commands">
+    Complementary specification workflow
+  </Card>
+  <Card title="Auto Run & Playbooks" icon="play" href="/power/auto-run-playbooks">
+    Execute checklists automatically
+  </Card>
+</CardGroup>

@@ -1,0 +1,445 @@
+---
+title: Creating Custom Slash Commands
+description: Build custom slash commands with template variables to automate common AI workflows and team-specific tasks.
+---
+
+## Overview
+
+Maestro's slash command system lets you create reusable prompts that are sent to AI agents with a simple `/command` syntax. Commands support template variables that are dynamically replaced at runtime, making them adaptable to different contexts.
+
+## Command Types
+
+### Built-in Maestro Commands
+
+Handled internally by Maestro (not sent to the agent):
+
+| Command    | Description                                     |
+| ---------- | ----------------------------------------------- |
+| `/history` | Generate synopsis and add to History panel      |
+| `/wizard`  | Start Auto Run planning wizard                  |
+| `/skills`  | List Claude Code skills _(Claude Code only)_    |
+
+### Custom AI Commands
+
+User-defined commands that send prompts to the agent with variable substitution.
+
+### Agent Native Commands
+
+Provider-specific commands discovered automatically (e.g., Claude Code's `/compact`, `/cost`).
+
+See [Slash Commands](/slash-commands) for complete documentation.
+
+## Creating a Custom Command
+
+<Steps>
+  <Step title="Open command editor">
+    1. Press `Cmd+,` (Mac) or `Ctrl+,` (Windows/Linux) to open Settings
+    2. Navigate to **AI Commands** tab
+    3. Click **Add Command**
+  </Step>
+
+  <Step title="Configure the command">
+    Fill in the command details:
+
+    - **Trigger**: The slash command (e.g., `/deploy`)
+    - **Description**: What the command does
+    - **Prompt**: The text sent to the agent (supports template variables)
+  </Step>
+
+  <Step title="Save and test">
+    1. Click **Save**
+    2. Type the trigger in any AI tab
+    3. Verify autocomplete shows your command
+    4. Press Tab or Enter to insert and execute
+  </Step>
+</Steps>
+
+## Template Variables
+
+Variables are replaced with actual values when the command is executed:
+
+### Agent & Session Variables
+
+```markdown
+# Deploy Command Example
+
+Deploy the application at {{AGENT_PATH}} to production.
+Agent: {{AGENT_NAME}}
+Branch: {{GIT_BRANCH}}
+Session: {{AGENT_SESSION_ID}}
+```
+
+Available variables:
+
+<CodeGroup>
+```plaintext Agent Context
+{{AGENT_NAME}}       - Agent display name
+{{AGENT_PATH}}       - Full path to agent's working directory
+{{AGENT_GROUP}}      - Group name (if grouped)
+{{AGENT_SESSION_ID}} - Provider session ID
+{{TAB_NAME}}         - Custom tab name
+{{TOOL_TYPE}}        - Agent type (claude-code, codex, opencode, factory-droid)
+```
+
+```plaintext Paths
+{{CWD}}              - Current working directory
+{{AUTORUN_FOLDER}}   - Auto Run documents folder
+```
+
+```plaintext Date/Time
+{{DATE}}             - YYYY-MM-DD
+{{TIME}}             - HH:MM:SS
+{{DATETIME}}         - YYYY-MM-DD HH:MM:SS
+{{TIMESTAMP}}        - Unix timestamp (ms)
+{{DATE_SHORT}}       - MM/DD/YY
+{{TIME_SHORT}}       - HH:MM
+{{YEAR}}             - YYYY
+{{MONTH}}            - 01-12
+{{DAY}}              - 01-31
+{{WEEKDAY}}          - Monday, Tuesday, etc.
+```
+
+```plaintext Git & Context
+{{GIT_BRANCH}}       - Current git branch
+{{IS_GIT_REPO}}      - "true" or "false"
+{{CONTEXT_USAGE}}    - Context window usage percentage
+```
+
+```plaintext Auto Run
+{{DOCUMENT_NAME}}    - Auto Run document name (without .md)
+{{DOCUMENT_PATH}}    - Full path to Auto Run document
+{{LOOP_NUMBER}}      - Loop iteration (00001, 00002, ...)
+```
+</CodeGroup>
+
+See the [templateVariables.ts](src:///home/daytona/workspace/source/src/shared/templateVariables.ts) implementation for the complete list.
+
+### Conductor Profile Variable
+
+`{{CONDUCTOR_PROFILE}}` inserts your "About Me" profile from Settings → General:
+
+```markdown
+Remember my preferences: {{CONDUCTOR_PROFILE}}
+
+Now help me with this task: ...
+```
+
+This is useful for mid-conversation reminders about your communication style or technical context.
+
+## Command Argument Patterns
+
+### Explicit Placement with $ARGUMENTS
+
+Control exactly where user input appears:
+
+```markdown
+# /plan command
+Create a detailed implementation plan for: $ARGUMENTS
+
+Include:
+- Technical approach
+- Dependencies
+- Testing strategy
+```
+
+Usage: `/plan user authentication with OAuth2`
+
+Result:
+```
+Create a detailed implementation plan for: user authentication with OAuth2
+
+Include:
+- Technical approach
+- Dependencies
+- Testing strategy
+```
+
+### Automatic Appending
+
+If `$ARGUMENTS` is omitted, user input is appended:
+
+```markdown
+# /commit command
+Please commit all changes with a descriptive message.
+```
+
+Usage: `/commit fix login bug`
+
+Result:
+```
+Please commit all changes with a descriptive message.
+
+fix login bug
+```
+
+<Tip>
+Use `$ARGUMENTS` for precise control over prompt structure. Omit it for simple commands where appending is sufficient.
+</Tip>
+
+## Real-World Command Examples
+
+### Daily Standup
+
+```markdown
+Trigger: /standup
+Description: Generate daily standup summary
+
+Prompt:
+It's {{WEEKDAY}}, {{DATE}}. I'm working on branch {{GIT_BRANCH}} at {{AGENT_PATH}}.
+
+My profile: {{CONDUCTOR_PROFILE}}
+
+Summarize:
+1. What I worked on yesterday (check git log)
+2. What I'm working on today
+3. Any blockers or concerns
+```
+
+### Code Review Request
+
+```markdown
+Trigger: /review
+Description: Request code review for staged changes
+
+Prompt:
+Review the staged changes in this repository.
+
+Context:
+- Branch: {{GIT_BRANCH}}
+- Project: {{AGENT_PATH}}
+- Session: {{AGENT_SESSION_ID}}
+
+Provide:
+- Security concerns
+- Performance implications
+- Code quality issues
+- Testing recommendations
+
+$ARGUMENTS
+```
+
+Usage: `/review Focus on the authentication module`
+
+### Documentation Generator
+
+```markdown
+Trigger: /docs
+Description: Generate documentation for code
+
+Prompt:
+Generate comprehensive documentation for: $ARGUMENTS
+
+Format: Markdown compatible with our docs site
+Include: Examples, parameters, return values, and edge cases
+Style: {{CONDUCTOR_PROFILE}}
+```
+
+### Deployment Checklist
+
+```markdown
+Trigger: /predeploy
+Description: Pre-deployment validation checklist
+
+Prompt:
+Running pre-deployment checks for {{AGENT_PATH}} on branch {{GIT_BRANCH}}.
+Date: {{DATETIME}}
+
+Validate:
+- [ ] All tests pass
+- [ ] No console errors or warnings
+- [ ] Dependencies are up to date
+- [ ] Environment variables are set
+- [ ] Database migrations are applied
+- [ ] Documentation is updated
+
+Report any issues found.
+```
+
+### Context-Aware Commit
+
+```markdown
+Trigger: /commitcontext
+Description: Commit with full context awareness
+
+Prompt:
+Create a commit for the staged changes.
+
+Context:
+- Project: {{AGENT_NAME}}
+- Path: {{AGENT_PATH}}
+- Branch: {{GIT_BRANCH}}
+- Date: {{DATE}}
+- Context usage: {{CONTEXT_USAGE}}%
+
+Commit message should:
+- Follow conventional commits format
+- Reference any related issues
+- Explain the "why" not just the "what"
+
+Additional notes: $ARGUMENTS
+```
+
+## Auto Run Integration
+
+Commands can reference Auto Run context:
+
+```markdown
+Trigger: /loopreport
+Description: Generate loop iteration report
+
+Prompt:
+Auto Run Loop Report
+
+Document: {{DOCUMENT_NAME}}
+Path: {{DOCUMENT_PATH}}
+Iteration: {{LOOP_NUMBER}}
+Timestamp: {{DATETIME}}
+
+Summarize:
+- Tasks completed this iteration
+- Any errors encountered
+- Metrics and performance
+- Recommendations for next iteration
+```
+
+This command is useful when running in loop mode to track progress across iterations.
+
+## Spec-Kit and OpenSpec Commands
+
+Maestro bundles structured workflow commands:
+
+### Spec-Kit Commands
+
+From [GitHub's spec-kit](https://github.com/github/spec-kit):
+
+```plaintext
+/speckit.help          - Learn spec-kit workflow
+/speckit.constitution  - Define project principles
+/speckit.specify       - Create feature specification
+/speckit.clarify       - Identify gaps and ask questions
+/speckit.plan          - Generate implementation plan
+/speckit.tasks         - Create actionable tasks
+/speckit.implement     - Convert to Auto Run documents
+```
+
+Prompts are stored in `src/prompts/speckit/` and are editable.
+
+### OpenSpec Commands
+
+From [Fission's OpenSpec](https://github.com/Fission-AI/OpenSpec):
+
+```plaintext
+/openspec.help         - Learn OpenSpec workflow
+/openspec.proposal     - Create change proposal
+/openspec.apply        - Implement approved proposal
+/openspec.archive      - Archive completed change
+/openspec.implement    - Convert to Auto Run documents
+```
+
+Prompts are stored in `src/prompts/openspec/`.
+
+<Note>
+Spec-Kit and OpenSpec commands are system commands and cannot be edited or deleted through the UI. Modify the source `.md` files to customize them.
+</Note>
+
+## Agent Native Command Discovery
+
+Claude Code native commands are discovered automatically:
+
+1. When a Claude Code agent starts, Maestro spawns it with `/help`
+2. The `system/init` message contains all available slash commands
+3. Commands appear in autocomplete with "Claude Code command" label
+
+Supported native commands in batch mode:
+
+```plaintext
+/compact         - Compact conversation history
+/cost            - Show token usage and cost
+/init            - Initialize CLAUDE.md file
+/pr-comments     - Address PR review comments
+/release-notes   - Generate release notes
+/review          - Request code review
+/security-review - Perform security review
+```
+
+See [Slash Commands](/slash-commands#agent-native-commands) for limitations.
+
+## Command Management
+
+### Editing Commands
+
+1. Open **Settings → AI Commands**
+2. Click the command to edit
+3. Modify trigger, description, or prompt
+4. Click **Save**
+
+### Deleting Commands
+
+1. Open **Settings → AI Commands**
+2. Click the command
+3. Click **Delete**
+4. Confirm deletion
+
+### Exporting/Importing Commands
+
+Commands are stored in Maestro settings (`settings.json`). To share commands:
+
+1. Export settings via **Settings → General → Storage Location**
+2. Share the settings file with team members
+3. Or manually copy the `customCommands` array from settings JSON
+
+## Best Practices
+
+<Accordion title="Use clear, action-oriented triggers">
+  `/deploy`, `/review`, `/test` are better than `/d`, `/r`, `/t`. Prioritize clarity over brevity.
+</Accordion>
+
+<Accordion title="Include context in prompts">
+  Always provide context like project path, branch, date. The more context, the better the AI's response.
+</Accordion>
+
+<Accordion title="Leverage template variables">
+  Use `{{GIT_BRANCH}}`, `{{DATE}}`, `{{AGENT_PATH}}` to make commands reusable across projects.
+</Accordion>
+
+<Accordion title="Test with and without arguments">
+  If using `$ARGUMENTS`, test both with and without user input to ensure sensible defaults.
+</Accordion>
+
+<Accordion title="Document complex commands">
+  Add detailed descriptions so team members understand what each command does.
+</Accordion>
+
+<Accordion title="Group related commands with prefixes">
+  Use namespaces like `/deploy.staging`, `/deploy.production` for command organization.
+</Accordion>
+
+## Troubleshooting
+
+**Command doesn't appear in autocomplete**
+
+Ensure:
+- Trigger starts with `/`
+- No duplicate triggers exist
+- Settings were saved
+- Agent is active (autocomplete only works in active tabs)
+
+**Variables not replaced**
+
+Check:
+- Variable names match exactly (case-sensitive)
+- Double curly braces are used: `{{VARIABLE}}` not `{VARIABLE}`
+- Variable is supported (see template variables list)
+
+**Arguments not inserted**
+
+Verify:
+- `$ARGUMENTS` is uppercase (not `$arguments`)
+- If omitted, arguments are automatically appended
+
+## Related Documentation
+
+- [Slash Commands](/slash-commands) - Complete slash command reference
+- [Spec-Kit Commands](/speckit-commands) - Spec-Kit workflow guide
+- [OpenSpec Commands](/openspec-commands) - OpenSpec workflow guide
+- [Configuration](/configuration) - Settings management

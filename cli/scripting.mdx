@@ -1,0 +1,257 @@
+---
+title: Scripting with Maestro CLI
+description: Use the Maestro CLI in scripts and automation workflows with JSON output
+---
+
+The Maestro CLI provides JSON output modes for easy integration with scripts, automation tools, and CI/CD pipelines.
+
+## JSON Output Format
+
+Most commands support the `--json` flag, which outputs data in machine-readable formats:
+
+- **List commands**: JSONL (JSON Lines) - one JSON object per line
+- **Show commands**: Single JSON object
+- **Playbook execution**: JSONL stream of events
+
+<CodeGroup>
+```bash List agents as JSON
+maestro-cli list agents --json
+```
+
+```bash Show agent details as JSON
+maestro-cli show agent <id> --json
+```
+
+```bash Run playbook with JSON output
+maestro-cli playbook my-playbook --json
+```
+</CodeGroup>
+
+## Parsing JSONL Output
+
+### Using jq
+
+```bash
+# Get all agent names
+maestro-cli list agents --json | jq -r '.name'
+
+# Filter active agents
+maestro-cli list agents --json | jq 'select(.state == "ready")'
+
+# Count agents by type
+maestro-cli list agents --json | jq -s 'group_by(.type) | map({type: .[0].type, count: length})'
+```
+
+### Using Python
+
+```python
+import subprocess
+import json
+
+# Get all agents
+result = subprocess.run(
+    ['maestro-cli', 'list', 'agents', '--json'],
+    capture_output=True,
+    text=True
+)
+
+agents = [json.loads(line) for line in result.stdout.strip().split('\n')]
+
+for agent in agents:
+    print(f"{agent['name']}: {agent['state']}")
+```
+
+### Using Node.js
+
+```javascript
+const { execSync } = require('child_process');
+
+// Get all playbooks
+const output = execSync('maestro-cli list playbooks --json', { encoding: 'utf-8' });
+const playbooks = output.trim().split('\n').map(line => JSON.parse(line));
+
+console.log(`Found ${playbooks.length} playbooks`);
+```
+
+## Event Streaming
+
+Playbook execution streams events in real-time:
+
+```bash
+maestro-cli playbook my-playbook --json | while read -r event; do
+  TYPE=$(echo "$event" | jq -r '.type')
+  case $TYPE in
+    start)
+      echo "Playbook started"
+      ;;
+    task:start)
+      TASK=$(echo "$event" | jq -r '.task')
+      echo "Starting task: $TASK"
+      ;;
+    task:complete)
+      echo "Task complete"
+      ;;
+    complete)
+      echo "Playbook finished"
+      ;;
+  esac
+done
+```
+
+## Common Scripting Patterns
+
+### Check Agent Status
+
+```bash
+#!/bin/bash
+AGENT_ID="my-agent"
+STATE=$(maestro-cli show agent "$AGENT_ID" --json | jq -r '.state')
+
+if [ "$STATE" = "ready" ]; then
+  echo "Agent is ready"
+  maestro-cli send "$AGENT_ID" "Run tests"
+else
+  echo "Agent is busy or offline: $STATE"
+  exit 1
+fi
+```
+
+### Automated Playbook Execution
+
+```bash
+#!/bin/bash
+set -e
+
+# Run playbook and capture exit code
+if maestro-cli playbook nightly-tests --json > /tmp/playbook.log 2>&1; then
+  echo "Playbook succeeded"
+  # Parse results
+  ERRORS=$(grep '"type":"error"' /tmp/playbook.log | wc -l)
+  echo "Errors: $ERRORS"
+else
+  echo "Playbook failed"
+  cat /tmp/playbook.log
+  exit 1
+fi
+```
+
+### Monitor Playbook Progress
+
+```python
+import subprocess
+import json
+import sys
+
+process = subprocess.Popen(
+    ['maestro-cli', 'playbook', 'my-playbook', '--json'],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True
+)
+
+for line in iter(process.stdout.readline, ''):
+    if not line:
+        break
+    
+    event = json.loads(line)
+    event_type = event.get('type')
+    
+    if event_type == 'task:start':
+        print(f"→ {event['task']}", flush=True)
+    elif event_type == 'task:complete':
+        print("✓", flush=True)
+    elif event_type == 'error':
+        print(f"✗ Error: {event['message']}", file=sys.stderr, flush=True)
+
+exit_code = process.wait()
+sys.exit(exit_code)
+```
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: Run Maestro Playbook
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Maestro playbook
+        run: |
+          maestro-cli playbook ci-tests --json | tee /tmp/playbook.log
+          
+      - name: Parse results
+        if: always()
+        run: |
+          TASKS=$(jq -s '[.[] | select(.type == "task:complete")] | length' /tmp/playbook.log)
+          ERRORS=$(jq -s '[.[] | select(.type == "error")] | length' /tmp/playbook.log)
+          echo "Tasks completed: $TASKS"
+          echo "Errors: $ERRORS"
+```
+
+### GitLab CI
+
+```yaml
+test:
+  script:
+    - maestro-cli playbook integration-tests --json > playbook.log
+    - cat playbook.log | jq -r 'select(.type == "error") | .message'
+  artifacts:
+    when: always
+    paths:
+      - playbook.log
+```
+
+## Error Handling
+
+```bash
+#!/bin/bash
+
+# Capture both stdout and stderr
+OUTPUT=$(maestro-cli list agents --json 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "Error running command: $OUTPUT" >&2
+  exit $EXIT_CODE
+fi
+
+# Parse successful output
+echo "$OUTPUT" | jq -r '.name'
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always check exit codes">
+    The CLI returns non-zero exit codes on failure. Always check `$?` or use `set -e` in bash scripts.
+  </Accordion>
+
+  <Accordion title="Stream large outputs">
+    For long-running playbooks, process events as they arrive rather than buffering all output.
+  </Accordion>
+
+  <Accordion title="Use --json consistently">
+    JSON output is stable and versioned. Human-readable output may change between versions.
+  </Accordion>
+
+  <Accordion title="Handle agent busy states">
+    Use `--wait` flag to queue commands when agents are busy, or check agent state first.
+  </Accordion>
+</AccordionGroup>
+
+<CardGroup cols={2}>
+  <Card title="CLI Commands" icon="terminal" href="/cli/commands">
+    Complete command reference
+  </Card>
+  <Card title="Automation" icon="robot" href="/cli/automation">
+    Automation patterns and examples
+  </Card>
+</CardGroup>

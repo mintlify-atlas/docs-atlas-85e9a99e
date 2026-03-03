@@ -1,0 +1,477 @@
+---
+title: Automation Patterns
+description: Workflows and patterns for automating agent orchestration with Maestro CLI
+---
+
+The Maestro CLI enables powerful automation workflows for batch processing, CI/CD integration, and multi-agent orchestration. This guide covers common patterns and best practices.
+
+## CI/CD Integration
+
+### GitHub Actions Workflow
+
+Run playbooks automatically on pull requests or merges:
+
+```yaml .github/workflows/maestro.yml
+name: Maestro Auto Run
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  run-playbook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Maestro CLI
+        run: |
+          # Install Maestro CLI (adjust for your setup)
+          npm install -g maestro-cli
+      
+      - name: Run Test Playbook
+        run: |
+          maestro-cli playbook test-suite --json > output.jsonl
+        continue-on-error: true
+      
+      - name: Parse Results
+        run: |
+          TASKS=$(jq -s '[.[] | select(.type=="task_complete")] | length' output.jsonl)
+          FAILED=$(jq -s '[.[] | select(.type=="task_complete" and .success==false)] | length' output.jsonl)
+          
+          echo "Tasks completed: $TASKS"
+          echo "Failed: $FAILED"
+          
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::Playbook execution had failures"
+            exit 1
+          fi
+      
+      - name: Upload Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: maestro-results
+          path: output.jsonl
+```
+
+### GitLab CI Pipeline
+
+```yaml .gitlab-ci.yml
+stages:
+  - test
+  - deploy
+
+maestro-playbook:
+  stage: test
+  script:
+    - maestro-cli playbook migration-test --json | tee results.jsonl
+    - |
+      SUCCESS=$(jq -r 'select(.type=="complete") | .success' results.jsonl)
+      if [ "$SUCCESS" != "true" ]; then
+        echo "Playbook failed"
+        exit 1
+      fi
+  artifacts:
+    paths:
+      - results.jsonl
+    reports:
+      junit: results.xml
+```
+
+## Parallel Agent Execution
+
+### Run Multiple Playbooks Concurrently
+
+Execute different playbooks on different agents simultaneously:
+
+```bash parallel-playbooks.sh
+#!/bin/bash
+
+# Run backend and frontend playbooks in parallel
+maestro-cli playbook backend-migration --json > backend.jsonl &
+BACKEND_PID=$!
+
+maestro-cli playbook frontend-update --json > frontend.jsonl &
+FRONTEND_PID=$!
+
+# Wait for both to complete
+wait $BACKEND_PID
+BACKEND_EXIT=$?
+
+wait $FRONTEND_PID
+FRONTEND_EXIT=$?
+
+# Check results
+if [ $BACKEND_EXIT -eq 0 ] && [ $FRONTEND_EXIT -eq 0 ]; then
+  echo "All playbooks completed successfully"
+  exit 0
+else
+  echo "One or more playbooks failed"
+  exit 1
+fi
+```
+
+### Agent Pool Pattern
+
+Distribute tasks across multiple agents:
+
+```bash agent-pool.sh
+#!/bin/bash
+
+# Get all agents in a group
+AGENTS=$(maestro-cli list agents --group dev-team --json | jq -r '.[].id')
+
+# Tasks to distribute
+TASKS=(
+  "Run unit tests"
+  "Run integration tests"
+  "Build documentation"
+  "Check code quality"
+)
+
+index=0
+for AGENT in $AGENTS; do
+  TASK="${TASKS[$index]}"
+  if [ -n "$TASK" ]; then
+    echo "Assigning '$TASK' to agent $AGENT"
+    maestro-cli send $AGENT "$TASK" --json > "result-$index.json" &
+    ((index++))
+  fi
+done
+
+wait
+echo "All tasks completed"
+```
+
+## Conditional Execution
+
+### Run Playbook Only If Tests Pass
+
+```bash conditional-run.sh
+#!/bin/bash
+
+# Run tests first
+maestro-cli send test-agent "Run all unit tests" --json > test-results.json
+
+# Check if tests passed
+SUCCESS=$(jq -r '.success' test-results.json)
+RESPONSE=$(jq -r '.response' test-results.json)
+
+if [ "$SUCCESS" = "true" ] && echo "$RESPONSE" | grep -q "All tests passed"; then
+  echo "Tests passed, running deployment playbook"
+  maestro-cli playbook deploy-production --json
+else
+  echo "Tests failed, skipping deployment"
+  exit 1
+fi
+```
+
+### Agent Availability Check
+
+```bash check-availability.sh
+#!/bin/bash
+
+AGENT_ID="a1b2c3"
+
+# Try with --wait flag (polls until available)
+echo "Waiting for agent to be available..."
+maestro-cli playbook my-playbook --wait --json
+
+# Alternative: Manual polling
+while true; do
+  RESULT=$(maestro-cli send $AGENT_ID "ping" --json 2>&1)
+  
+  if echo "$RESULT" | grep -q '"success":true'; then
+    echo "Agent is available"
+    break
+  elif echo "$RESULT" | grep -q "AGENT_BUSY"; then
+    echo "Agent busy, waiting..."
+    sleep 5
+  else
+    echo "Error checking agent: $RESULT"
+    exit 1
+  fi
+done
+
+# Now run the playbook
+maestro-cli playbook my-playbook --json
+```
+
+## Batch Processing Patterns
+
+### Process Multiple Files
+
+Generate playbooks for each file in a directory:
+
+```bash batch-process.sh
+#!/bin/bash
+
+AGENT_ID="backend-dev"
+
+for FILE in src/migrations/*.sql; do
+  BASENAME=$(basename "$FILE")
+  echo "Processing $BASENAME..."
+  
+  MESSAGE="Execute migration: $FILE"
+  maestro-cli send $AGENT_ID "$MESSAGE" --json > "result-$BASENAME.json"
+  
+  SUCCESS=$(jq -r '.success' "result-$BASENAME.json")
+  if [ "$SUCCESS" != "true" ]; then
+    echo "Failed to process $BASENAME"
+    exit 1
+  fi
+done
+
+echo "All migrations processed successfully"
+```
+
+### Iterative Refinement Loop
+
+Keep refining until quality criteria are met:
+
+```bash refine-until-perfect.sh
+#!/bin/bash
+
+AGENT_ID="code-reviewer"
+MAX_ITERATIONS=5
+
+for i in $(seq 1 $MAX_ITERATIONS); do
+  echo "Iteration $i: Running code quality check..."
+  
+  RESULT=$(maestro-cli send $AGENT_ID "Review code quality and fix issues" --json)
+  SUCCESS=$(echo "$RESULT" | jq -r '.success')
+  RESPONSE=$(echo "$RESULT" | jq -r '.response')
+  
+  if echo "$RESPONSE" | grep -q "No issues found"; then
+    echo "Code quality passed!"
+    exit 0
+  fi
+  
+  echo "Issues found, refining..."
+  sleep 2
+done
+
+echo "Max iterations reached, manual review needed"
+exit 1
+```
+
+## Error Handling and Recovery
+
+### Retry Pattern with Exponential Backoff
+
+```bash retry-with-backoff.sh
+#!/bin/bash
+
+function run_with_retry {
+  local max_attempts=5
+  local timeout=1
+  local attempt=1
+  
+  while [ $attempt -le $max_attempts ]; do
+    echo "Attempt $attempt of $max_attempts"
+    
+    if maestro-cli playbook "$1" --json > output.jsonl; then
+      echo "Success!"
+      return 0
+    fi
+    
+    echo "Failed, waiting ${timeout}s before retry..."
+    sleep $timeout
+    
+    attempt=$((attempt + 1))
+    timeout=$((timeout * 2))
+  done
+  
+  echo "All attempts failed"
+  return 1
+}
+
+run_with_retry "my-playbook"
+```
+
+### Graceful Degradation
+
+```bash fallback-pattern.sh
+#!/bin/bash
+
+# Try primary agent
+echo "Trying primary agent..."
+RESULT=$(maestro-cli send primary-agent "Analyze codebase" --json 2>&1)
+
+if echo "$RESULT" | grep -q '"success":true'; then
+  echo "Primary agent succeeded"
+  echo "$RESULT" | jq -r '.response'
+  exit 0
+fi
+
+# Fallback to secondary agent
+echo "Primary agent failed, trying secondary..."
+RESULT=$(maestro-cli send secondary-agent "Analyze codebase" --json 2>&1)
+
+if echo "$RESULT" | grep -q '"success":true'; then
+  echo "Secondary agent succeeded"
+  echo "$RESULT" | jq -r '.response'
+  exit 0
+fi
+
+echo "Both agents failed"
+exit 1
+```
+
+## Monitoring and Alerting
+
+### Cost Tracking
+
+```bash track-costs.sh
+#!/bin/bash
+
+AGENT_ID="production-agent"
+COST_THRESHOLD=1.00  # Alert if cost exceeds $1.00
+
+# Get agent stats
+STATS=$(maestro-cli show agent $AGENT_ID --json)
+TOTAL_COST=$(echo "$STATS" | jq -r '.stats.totalCost')
+
+echo "Total cost: \$$TOTAL_COST"
+
+if (( $(echo "$TOTAL_COST > $COST_THRESHOLD" | bc -l) )); then
+  echo "::warning::Agent cost exceeded threshold: \$$TOTAL_COST"
+  # Send alert (Slack, email, etc.)
+  curl -X POST https://hooks.slack.com/services/YOUR/WEBHOOK/URL \
+    -H 'Content-Type: application/json' \
+    -d "{\"text\":\"Agent cost alert: \\$${TOTAL_COST}\"}"
+fi
+```
+
+### Progress Reporting
+
+```bash progress-reporter.sh
+#!/bin/bash
+
+maestro-cli playbook large-migration --json | while IFS= read -r line; do
+  TYPE=$(echo "$line" | jq -r '.type')
+  
+  case $TYPE in
+    task_complete)
+      TASK_INDEX=$(echo "$line" | jq -r '.taskIndex')
+      SUCCESS=$(echo "$line" | jq -r '.success')
+      SUMMARY=$(echo "$line" | jq -r '.summary')
+      
+      if [ "$SUCCESS" = "true" ]; then
+        echo "✓ Task $((TASK_INDEX + 1)): $SUMMARY"
+      else
+        echo "✗ Task $((TASK_INDEX + 1)) FAILED: $SUMMARY"
+      fi
+      ;;
+    
+    document_complete)
+      DOC=$(echo "$line" | jq -r '.document')
+      TASKS=$(echo "$line" | jq -r '.tasksCompleted')
+      echo "✓ Completed document: $DOC ($TASKS tasks)"
+      ;;
+    
+    complete)
+      TOTAL=$(echo "$line" | jq -r '.totalTasksCompleted')
+      echo "✓ Playbook complete: $TOTAL tasks"
+      ;;
+  esac
+done
+```
+
+## Scheduled Execution
+
+### Cron Job
+
+```cron
+# Run nightly maintenance playbook at 2 AM
+0 2 * * * /usr/local/bin/maestro-cli playbook nightly-maintenance --json >> /var/log/maestro-cron.log 2>&1
+
+# Weekly cleanup on Sundays at 3 AM
+0 3 * * 0 /usr/local/bin/maestro-cli clean playbooks --json >> /var/log/maestro-cleanup.log 2>&1
+
+# Hourly health check
+0 * * * * /home/user/scripts/maestro-health-check.sh
+```
+
+### Systemd Timer
+
+```ini /etc/systemd/system/maestro-playbook.service
+[Unit]
+Description=Maestro Playbook Execution
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/maestro-cli playbook daily-tasks --json
+StandardOutput=journal
+StandardError=journal
+```
+
+```ini /etc/systemd/system/maestro-playbook.timer
+[Unit]
+Description=Run Maestro Playbook Daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable the timer:
+
+```bash
+sudo systemctl enable maestro-playbook.timer
+sudo systemctl start maestro-playbook.timer
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Use --json for automation">
+    Always use `--json` flag in scripts for reliable parsing. Human-readable output is for terminal use only.
+  </Step>
+  
+  <Step title="Check exit codes">
+    Test `$?` after every command. Exit code 0 means success, 1 means error.
+  </Step>
+  
+  <Step title="Handle agent busy states">
+    Use `--wait` flag or implement manual polling to handle busy agents gracefully.
+  </Step>
+  
+  <Step title="Implement retry logic">
+    Network issues and transient errors happen. Use exponential backoff for retries.
+  </Step>
+  
+  <Step title="Monitor costs">
+    Track `usage.totalCostUsd` from responses to avoid unexpected bills.
+  </Step>
+  
+  <Step title="Log everything">
+    Save JSONL output to files for debugging and audit trails.
+  </Step>
+</Steps>
+
+<Warning>
+  Never commit agent IDs or session IDs to version control. Use environment variables or secrets management.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Scripting with JSONL" icon="code" href="/cli/scripting">
+    Parse and process JSONL output in your scripts
+  </Card>
+  <Card title="CLI Commands" icon="terminal" href="/cli/commands">
+    Complete command reference
+  </Card>
+  <Card title="Playbook Exchange" icon="store" href="/cli/playbook-exchange">
+    Browse and share automation playbooks
+  </Card>
+  <Card title="Auto Run" icon="play" href="/power/auto-run-playbooks">
+    Learn about Auto Run playbooks
+  </Card>
+</CardGroup>

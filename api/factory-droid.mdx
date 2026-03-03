@@ -1,0 +1,441 @@
+---
+title: "Factory Droid Integration"
+description: "Enterprise AI coding assistant from Factory with multi-model support"
+icon: "industry"
+---
+
+Factory Droid is Factory's enterprise AI coding assistant, supporting GPT-5, Claude 4, and Gemini models with advanced reasoning capabilities.
+
+## Overview
+
+Factory Droid (`droid`) provides production-grade AI coding with support for the latest models from OpenAI, Anthropic, and Google.
+
+<Info>
+Factory Droid supports session resume, read-only mode, image input, stream-json output, and thinking display with comprehensive usage tracking.
+</Info>
+
+## Installation
+
+<Steps>
+  <Step title="Install Factory Droid">
+    Install via Factory's official installer:
+    
+    <CodeGroup>
+    ```bash macOS/Linux
+    curl -fsSL https://install.factory.ai/droid | sh
+    ```
+    
+    ```bash npm
+    npm install -g @factory-ai/droid
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Authenticate">
+    Authenticate with Factory:
+    
+    ```bash
+    droid auth login
+    ```
+    
+    Follow the prompts to sign in with your Factory account.
+  </Step>
+  
+  <Step title="Verify Installation">
+    Test Factory Droid:
+    
+    ```bash
+    droid --version
+    ```
+  </Step>
+</Steps>
+
+## Capabilities
+
+Factory Droid provides enterprise-grade AI features:
+
+<ParamField path="supportsResume" type="boolean" default="true">
+  Resume sessions with `-s, --session-id` flag (requires a prompt)
+</ParamField>
+
+<ParamField path="supportsReadOnlyMode" type="boolean" default="true">
+  Default mode is read-only (no flags needed)
+</ParamField>
+
+<ParamField path="supportsJsonOutput" type="boolean" default="true">
+  Structured output with `-o stream-json`
+</ParamField>
+
+<ParamField path="supportsSessionId" type="boolean" default="true">
+  UUIDs in session filenames
+</ParamField>
+
+<ParamField path="supportsImageInput" type="boolean" default="true">
+  Attach images with `-f, --file` flag
+</ParamField>
+
+<ParamField path="supportsImageInputOnResume" type="boolean" default="true">
+  Images work with `-s` flag
+</ParamField>
+
+<ParamField path="supportsSessionStorage" type="boolean" default="true">
+  Sessions in `~/.factory/sessions/` (JSONL files)
+</ParamField>
+
+<ParamField path="supportsUsageStats" type="boolean" default="true">
+  Token usage in `settings.json` per session
+</ParamField>
+
+<ParamField path="supportsModelSelection" type="boolean" default="true">
+  Select models with `-m, --model` flag
+</ParamField>
+
+<ParamField path="supportsStreamJsonInput" type="boolean" default="true">
+  Stream-json input format supported
+</ParamField>
+
+<ParamField path="supportsThinkingDisplay" type="boolean" default="true">
+  Thinking content in message streams
+</ParamField>
+
+<ParamField path="supportsContextMerge" type="boolean" default="true">
+  Receive merged context via prompts
+</ParamField>
+
+<ParamField path="supportsContextExport" type="boolean" default="true">
+  Exportable session files
+</ParamField>
+
+<Warning>
+Factory Droid provides token counts but NOT cost tracking. Pricing varies by model and Factory plan.
+</Warning>
+
+Source: `src/main/agents/capabilities.ts:290`
+
+## Command-Line Arguments
+
+Maestro uses the `exec` subcommand for batch operations:
+
+```bash
+droid exec --skip-permissions-unsafe -o stream-json [options] "prompt"
+```
+
+<ParamField path="exec" type="subcommand">
+  Batch execution mode (required for Maestro)
+</ParamField>
+
+<ParamField path="--skip-permissions-unsafe" type="flag">
+  Auto-approve all operations (like Claude's --dangerously-skip-permissions)
+</ParamField>
+
+<ParamField path="-o" type="string" default="stream-json">
+  Output format for structured parsing
+</ParamField>
+
+<Note>
+Factory Droid doesn't use `--` separator. The prompt is a positional argument.
+</Note>
+
+### Resume Mode
+
+Resume an existing session:
+
+```bash
+droid exec --skip-permissions-unsafe -o stream-json -s {sessionId} "prompt"
+```
+
+<ParamField path="-s, --session-id" type="string">
+  Session ID to resume (requires a prompt)
+</ParamField>
+
+### Read-Only Mode
+
+Factory Droid's default mode is read-only:
+
+```bash
+droid exec -o stream-json "prompt"
+```
+
+<Info>
+Omitting `--skip-permissions-unsafe` runs in read-only mode. Maestro uses this flag for YOLO mode.
+</Info>
+
+### Model Selection
+
+Specify a model:
+
+```bash
+droid exec --skip-permissions-unsafe -o stream-json -m gpt-5.1-codex "prompt"
+```
+
+<ParamField path="-m, --model" type="string">
+  Model ID from supported models list
+</ParamField>
+
+### Reasoning Effort
+
+Adjust reasoning level:
+
+```bash
+droid exec --skip-permissions-unsafe -o stream-json -r high "prompt"
+```
+
+<ParamField path="-r, --reasoning-effort" type="string">
+  Reasoning level: `low`, `medium`, `high`
+</ParamField>
+
+### Working Directory
+
+Set working directory:
+
+```bash
+droid exec --skip-permissions-unsafe -o stream-json --cwd /path/to/project "prompt"
+```
+
+<ParamField path="--cwd" type="string">
+  Working directory for execution
+</ParamField>
+
+### File/Image Input
+
+Attach a file or image:
+
+```bash
+droid exec --skip-permissions-unsafe -o stream-json -f /path/to/image.png "prompt"
+```
+
+<ParamField path="-f, --file" type="string">
+  Path to file or image
+</ParamField>
+
+Source: `src/main/agents/definitions.ts:261`
+
+## Configuration
+
+Configure Factory Droid in Maestro's agent settings:
+
+### Model Selection
+
+<ParamField path="model" type="select" default="">
+  Model to use (empty = Factory's default)
+  
+  Options:
+  - `` - Use droid's default
+  - `gpt-5.1` - OpenAI GPT-5.1
+  - `gpt-5.1-codex` - GPT-5.1 optimized for coding
+  - `gpt-5.1-codex-max` - Extended context
+  - `gpt-5.2` - Latest GPT-5
+  - `claude-sonnet-4-5-20250929` - Claude Sonnet 4.5
+  - `claude-opus-4-5-20251101` - Claude Opus 4.5
+  - `claude-haiku-4-5-20251001` - Claude Haiku 4.5
+  - `gemini-3-pro-preview` - Google Gemini 3 Pro
+</ParamField>
+
+### Reasoning Effort
+
+<ParamField path="reasoningEffort" type="select" default="">
+  How much the model should reason
+  
+  Options:
+  - `` - Use droid's default
+  - `low` - Fast responses
+  - `medium` - Balanced
+  - `high` - Deep reasoning
+</ParamField>
+
+### Context Window
+
+<ParamField path="contextWindow" type="number" default="200000">
+  Token limit for UI display (varies by model)
+</ParamField>
+
+Source: `src/main/agents/definitions.ts:302`
+
+## Session Storage
+
+Factory Droid stores sessions as JSONL files:
+
+```
+~/.factory/sessions/{session-uuid}/
+  ├── conversation.jsonl    # Conversation history
+  ├── settings.json         # Model config, token usage
+  └── files/                # Created/modified files
+```
+
+Maestro can import and resume Factory Droid sessions.
+
+Source: `src/main/storage/factory-droid-session-storage.ts`
+
+## Output Format
+
+Factory Droid outputs newline-delimited JSON events:
+
+<CodeGroup>
+```json Session Start
+{
+  "type": "session.started",
+  "session_id": "abc-123-def",
+  "model": "gpt-5.1-codex"
+}
+```
+
+```json Thinking
+{
+  "type": "message.thinking",
+  "content": "Analyzing the codebase structure..."
+}
+```
+
+```json Message
+{
+  "type": "message.content",
+  "content": "I'll create the function for you..."
+}
+```
+
+```json Tool Use
+{
+  "type": "tool.use",
+  "tool": "write_file",
+  "arguments": {
+    "path": "example.js",
+    "content": "console.log('Hello');"
+  }
+}
+```
+
+```json Session Complete
+{
+  "type": "session.completed",
+  "usage": {
+    "input_tokens": 1500,
+    "output_tokens": 800
+  }
+}
+```
+</CodeGroup>
+
+Source: `src/main/parsers/factory-droid-parser.ts`
+
+## Supported Models
+
+Factory Droid supports cutting-edge models:
+
+<AccordionGroup>
+  <Accordion title="OpenAI GPT-5">
+    - `gpt-5.1` - Latest GPT-5
+    - `gpt-5.1-codex` - Coding optimized
+    - `gpt-5.1-codex-max` - Extended context
+    - `gpt-5.2` - Latest variant
+  </Accordion>
+  
+  <Accordion title="Claude 4.5">
+    - `claude-sonnet-4-5-20250929` - Balanced performance
+    - `claude-opus-4-5-20251101` - Maximum capability
+    - `claude-haiku-4-5-20251001` - Fast responses
+  </Accordion>
+  
+  <Accordion title="Google Gemini">
+    - `gemini-3-pro-preview` - Latest Gemini Pro
+  </Accordion>
+</AccordionGroup>
+
+## Error Patterns
+
+Common errors Maestro detects:
+
+<ResponseField name="AUTH_FAILED" type="error">
+  **Pattern**: `authentication failed`
+  
+  **Solution**: Re-authenticate with `droid auth login`
+</ResponseField>
+
+<ResponseField name="MODEL_UNAVAILABLE" type="error">
+  **Pattern**: `model not available`
+  
+  **Solution**: Check model ID and Factory plan access
+</ResponseField>
+
+<ResponseField name="RATE_LIMIT" type="error">
+  **Pattern**: `rate limit exceeded`
+  
+  **Solution**: Wait or upgrade Factory plan
+</ResponseField>
+
+Source: `src/main/parsers/error-patterns.ts`
+
+## Usage with Maestro Features
+
+<CardGroup cols={2}>
+  <Card title="Auto Run" icon="play">
+    Full support for playbooks with enterprise reliability
+  </Card>
+  
+  <Card title="Group Chat" icon="users">
+    Multi-agent collaboration across providers
+  </Card>
+  
+  <Card title="Context Grooming" icon="scissors">
+    Export and merge conversation context
+  </Card>
+  
+  <Card title="Thinking Display" icon="brain">
+    View model reasoning in real-time
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Steps>
+  <Step title="Choose Model by Task">
+    - Use `gpt-5.1-codex` for coding
+    - Use `claude-opus-4-5` for complex reasoning
+    - Use `claude-haiku-4-5` for speed
+  </Step>
+  
+  <Step title="Adjust Reasoning Effort">
+    Set reasoning level based on task complexity to balance speed and quality
+  </Step>
+  
+  <Step title="Monitor Token Usage">
+    Check session settings.json for token consumption per model
+  </Step>
+  
+  <Step title="Use Default Read-Only">
+    Omit `--skip-permissions-unsafe` for safer analysis tasks
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Droid not detected">
+    Verify installation:
+    ```bash
+    which droid
+    droid --version
+    ```
+  </Accordion>
+  
+  <Accordion title="Authentication failed">
+    Re-authenticate:
+    ```bash
+    droid auth logout
+    droid auth login
+    ```
+  </Accordion>
+  
+  <Accordion title="Resume requires prompt">
+    Factory Droid resume always needs a prompt:
+    ```bash
+    droid exec -s session-id "Continue the task"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+- [Factory Documentation](https://docs.factory.ai)
+- [Factory CLI Reference](https://docs.factory.ai/cli)
+- [Agent Management](/core/agent-management)
+- [Auto Run Playbooks](/power/auto-run-playbooks)

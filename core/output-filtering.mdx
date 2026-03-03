@@ -1,0 +1,416 @@
+---
+title: Output Filtering & Search
+description: Search, filter, and navigate AI responses and terminal output with powerful search tools
+---
+
+Maestro provides **context-aware search** that adapts to what you're viewing. Press `Cmd+F` anywhere to search - the behavior changes based on your current view.
+
+## Context-Aware Search
+
+The same shortcut (`Cmd+F`) performs different searches depending on context:
+
+<Tabs>
+  <Tab title="Main Window">
+    **Search AI Output or Terminal History**
+    
+    When the main panel is focused, `Cmd+F` searches the active conversation or terminal output.
+    
+    **Features**:
+    - Case-insensitive by default
+    - Regex support (toggle with button)
+    - Jump to next/previous match
+    - Match count display
+    - Persistent across scrolling
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:102-106`
+  </Tab>
+  
+  <Tab title="File Explorer">
+    **Filter File Tree**
+    
+    When the Files tab is active, `Cmd+F` filters the visible file tree.
+    
+    **Features**:
+    - Fuzzy path matching
+    - Highlights matches in tree
+    - Expands folders with matches
+    - Real-time filtering
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:90`
+  </Tab>
+  
+  <Tab title="Left Bar">
+    **Filter Agents**
+    
+    When the Left Bar is focused, `Cmd+F` filters the agent list.
+    
+    **Features**:
+    - Filter by agent name
+    - Filter by group name
+    - Shows match count
+    - Keyboard navigation of results
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:91-95`
+  </Tab>
+  
+  <Tab title="History Tab">
+    **Search History Entries**
+    
+    When the History tab is active, `Cmd+F` searches conversation history.
+    
+    **Features**:
+    - Search by summary
+    - Search by response content
+    - Filter by type (Auto/User)
+    - Date range filtering
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:96-100`
+  </Tab>
+</Tabs>
+
+## AI Output Search
+
+Search within AI conversations with advanced filtering:
+
+### Search Features
+
+<AccordionGroup>
+  <Accordion title="Regex Support">
+    Enable regex mode for advanced pattern matching:
+    
+    ```regex
+    function\s+\w+     # Find function declarations
+    import.*from       # Find import statements
+    \b\d{3}-\d{4}\b    # Find phone numbers
+    ```
+    
+    **Toggle**: Click the `.*` button in the search bar
+  </Accordion>
+  
+  <Accordion title="Case Sensitivity">
+    Toggle case-sensitive search:
+    
+    - **Default**: Case-insensitive ("test" matches "Test", "TEST", "test")
+    - **Case-sensitive**: Exact match ("test" only matches "test")
+    
+    **Toggle**: Click the `Aa` button in the search bar
+  </Accordion>
+  
+  <Accordion title="Match Navigation">
+    Jump between matches:
+    
+    ```bash
+    Enter              # Next match
+    Shift+Enter        # Previous match
+    ```
+    
+    The current match index and total count are displayed:
+    
+    ```
+    2 / 15 matches
+    ```
+  </Accordion>
+  
+  <Accordion title="Highlight Matches">
+    All matches are highlighted in the output with:
+    
+    - **Yellow background** for all matches
+    - **Orange background** for the current/active match
+    - **Auto-scroll** to bring current match into view
+  </Accordion>
+</AccordionGroup>
+
+### Search Interface
+
+The search bar appears at the top of the main panel:
+
+```typescript
+// Search state
+interface SearchState {
+  query: string;           // Search text
+  isRegex: boolean;        // Regex mode enabled
+  caseSensitive: boolean;  // Case-sensitive search
+  currentIndex: number;    // Current match (0-based)
+  totalMatches: number;    // Total match count
+}
+```
+
+## Terminal Output Search
+
+Search terminal history with the same interface:
+
+### Terminal-Specific Features
+
+- **ANSI code stripping**: Searches the text content, ignoring terminal escape codes
+- **Command boundaries**: Jump between command outputs
+- **Scroll lock**: Searching disables auto-scroll to preserve results
+
+**Filter**: `src/main/utils/terminalFilter.ts`
+
+## Auto-Scroll Control
+
+Control whether output auto-scrolls to bottom:
+
+```bash
+Alt+Cmd+S          # Toggle auto-scroll AI output
+```
+
+**Features**:
+
+- **Auto-scroll ON**: New output scrolls into view automatically
+- **Auto-scroll OFF**: Output stays at current scroll position
+- **Smart resume**: Scrolling to bottom manually re-enables auto-scroll
+
+**Shortcut**: `src/renderer/constants/shortcuts.ts:71-75`
+
+<Tip>
+  **Pro Tip**: Disable auto-scroll when searching or reviewing earlier output. Re-enable it by scrolling to the bottom or pressing `Cmd+Shift+J`.
+</Tip>
+
+## Jump to Bottom
+
+Instantly scroll to the latest output:
+
+```bash
+Cmd+Shift+J        # Jump to bottom of output
+```
+
+This also **re-enables auto-scroll** if it was disabled.
+
+**Shortcut**: `src/renderer/constants/shortcuts.ts:57`
+
+## Output Display Modes
+
+### Thinking Display
+
+Control how AI reasoning/thinking content is shown:
+
+```bash
+Cmd+Shift+K        # Toggle show thinking
+```
+
+**Modes**:
+
+```typescript
+type ThinkingMode = 'off' | 'on' | 'sticky';
+```
+
+| Mode | Behavior |
+|------|----------|
+| **Off** | Thinking is suppressed (never shown) |
+| **On** | Thinking shown while streaming, cleared when response completes |
+| **Sticky** | Thinking shown and remains visible after response |
+
+**Setting**: Per-tab in `src/renderer/types/index.ts:AITab`
+
+**Shortcut**: `src/renderer/constants/shortcuts.ts:157-161`
+
+### Markdown Rendering
+
+Toggle between rendered markdown and raw text:
+
+```bash
+Cmd+E              # Toggle edit/preview mode (in file preview)
+```
+
+In AI output, markdown is always rendered with:
+
+- **Syntax highlighting** for code blocks
+- **Tables** with borders and alignment
+- **Links** as clickable URLs
+- **Images** with zoom on click
+- **Mermaid diagrams** rendered as SVG
+
+**Renderer**: `src/renderer/components/TerminalOutput.tsx`
+
+## Filtering History
+
+The History panel provides advanced filtering:
+
+### Filter Options
+
+<Steps>
+  <Step title="Open History">
+    Press `Cmd+Shift+H` or click the **History** tab in the Right Bar.
+  </Step>
+  
+  <Step title="Search">
+    Press `Cmd+F` to open the search bar.
+    
+    **Search fields**:
+    - Entry summary
+    - Full response content
+    - Session name
+  </Step>
+  
+  <Step title="Filter by Type">
+    Toggle filters:
+    
+    - **AUTO** - Auto Run entries only
+    - **USER** - User-initiated prompts only
+    - **ALL** - Show everything (default)
+  </Step>
+  
+  <Step title="Filter by Success">
+    Show only:
+    
+    - **Successful** responses (no errors)
+    - **Failed** responses (errors occurred)
+    - **All** responses
+  </Step>
+</Steps>
+
+**Component**: `src/renderer/components/HistoryPanel.tsx`
+
+## Director's Notes Search
+
+Search your saved notes:
+
+```bash
+Cmd+Shift+O        # Open Director's Notes
+Cmd+F              # Search notes (when modal is open)
+```
+
+**Features**:
+- Full-text search across all notes
+- Filter by tags
+- Sort by date or title
+- Regex support
+
+**Shortcut**: `src/renderer/constants/shortcuts.ts:76-80, 107-111`
+
+## Log Viewer Search
+
+Search system logs:
+
+```bash
+Alt+Cmd+L          # Open System Log Viewer
+Cmd+F              # Search logs (when viewer is open)
+```
+
+**Features**:
+- Filter by log level (debug, info, warn, error)
+- Search by message content
+- Time range filtering
+- Regex patterns
+
+**Component**: `src/renderer/components/LogViewer.tsx`
+
+**Shortcut**: `src/renderer/constants/shortcuts.ts:50, 101`
+
+## Search Performance
+
+<AccordionGroup>
+  <Accordion title="Incremental Search">
+    Search results update as you type, with debouncing to avoid performance issues:
+    
+    - **Debounce delay**: 150ms
+    - **Max results**: 1000 matches
+    - **Lazy highlighting**: Only visible matches are highlighted
+  </Accordion>
+  
+  <Accordion title="Virtual Scrolling">
+    Large outputs use virtual scrolling to render only visible content:
+    
+    - Handles millions of lines efficiently
+    - Search still finds matches in off-screen content
+    - Auto-scroll to matches works seamlessly
+  </Accordion>
+  
+  <Accordion title="Regex Optimization">
+    Complex regex patterns are compiled once and reused:
+    
+    ```typescript
+    // Cached regex compilation
+    const regex = useMemo(
+      () => new RegExp(pattern, flags),
+      [pattern, flags]
+    );
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard Shortcuts
+
+```bash
+# Context-Aware Search
+Cmd+F              # Search (adapts to current view)
+
+# Search Navigation
+Enter              # Next match
+Shift+Enter        # Previous match
+Esc                # Close search / clear filter
+
+# Output Control
+Cmd+Shift+J        # Jump to bottom
+Alt+Cmd+S          # Toggle auto-scroll
+
+# Display Modes
+Cmd+Shift+K        # Toggle show thinking (AI mode)
+Cmd+E              # Toggle edit/preview (file preview)
+
+# Specialized Search
+Cmd+G              # Fuzzy file search
+Cmd+Shift+L        # View agent sessions (searchable)
+Alt+Cmd+L          # System log viewer (searchable)
+Cmd+Shift+O        # Director's Notes (searchable)
+```
+
+## Tips for Effective Searching
+
+<AccordionGroup>
+  <Accordion title="Use Regex for Patterns">
+    Instead of searching for specific values, search for patterns:
+    
+    ```regex
+    \berror\b          # Find "error" as whole word
+    TODO:.*            # Find all TODO comments
+    \d{1,3}\.\d{1,3}   # Find version numbers
+    ```
+  </Accordion>
+  
+  <Accordion title="Search History First">
+    Before asking the AI to "find that thing we discussed", search History:
+    
+    - Faster than re-asking
+    - Shows exact context
+    - Includes token usage stats
+  </Accordion>
+  
+  <Accordion title="Combine with Auto-Scroll">
+    1. Disable auto-scroll (`Alt+Cmd+S`)
+    2. Search for pattern
+    3. Review all matches without output moving
+    4. Jump to bottom (`Cmd+Shift+J`) to resume
+  </Accordion>
+  
+  <Accordion title="Save Searches as Custom Commands">
+    Create custom AI commands for frequent searches:
+    
+    ```typescript
+    // Settings → Custom AI Commands
+    {
+      command: '/errors',
+      prompt: 'Find all error messages in the output',
+      aiOnly: true
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Master all search shortcuts
+  </Card>
+  <Card title="File Explorer" icon="folder" href="/core/file-explorer">
+    Filter and search file trees
+  </Card>
+  <Card title="Git Integration" icon="git-branch" href="/core/git-integration">
+    Search git diffs and logs
+  </Card>
+  <Card title="Dual-Mode Sessions" icon="toggle-on" href="/core/dual-mode-sessions">
+    Search in both AI and terminal modes
+  </Card>
+</CardGroup>

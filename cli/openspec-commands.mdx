@@ -1,0 +1,272 @@
+---
+title: OpenSpec Commands
+description: Lightweight specification workflow for rapid prototyping and feature proposals
+---
+
+OpenSpec is a streamlined alternative to Spec-Kit, designed for quick feature proposals and rapid iteration. It focuses on getting from idea to implementation faster with less upfront planning.
+
+## What is OpenSpec?
+
+OpenSpec provides a minimal workflow:
+
+1. **Proposal** - Draft a feature idea
+2. **Implement** - Generate implementation with AI
+3. **Apply** - Review and merge changes
+4. **Archive** - Track completed work
+
+It's ideal for:
+- Prototyping and experiments
+- Small features and bug fixes
+- Learning and exploration
+- When you want to move fast and iterate
+
+<Info>
+**OpenSpec vs Spec-Kit**: OpenSpec is for speed, Spec-Kit is for rigor. Use OpenSpec for rapid prototyping, Spec-Kit for production features.
+</Info>
+
+## Available Commands
+
+OpenSpec commands are accessed via slash commands:
+
+### /openspec:help
+
+Show available OpenSpec commands.
+
+```
+/openspec:help
+```
+
+### /openspec:proposal
+
+Create a lightweight feature proposal.
+
+```
+/openspec:proposal Add dark mode toggle to settings
+```
+
+**What it generates:**
+- Brief problem statement
+- Proposed solution
+- Key files to modify
+- Estimated effort
+
+**Example output:**
+```markdown
+## Feature Proposal: Dark Mode Toggle
+
+### Problem
+Users want to switch between light and dark themes.
+
+### Solution
+Add a toggle in Settings that:
+1. Switches CSS theme variables
+2. Persists choice to localStorage
+3. Respects system preference by default
+
+### Files to Modify
+- `src/components/Settings.tsx`
+- `src/styles/themes.css`
+- `src/hooks/useTheme.ts`
+
+### Effort: 2-3 hours
+```
+
+### /openspec:implement
+
+Generate implementation code from a proposal.
+
+```
+/openspec:implement [paste proposal or feature description]
+```
+
+**What it does:**
+- Generates code for each file
+- Includes tests if applicable
+- Adds comments explaining key decisions
+- Suggests manual testing steps
+
+**Example:**
+```typescript
+// src/hooks/useTheme.ts
+import { useState, useEffect } from 'react';
+
+export function useTheme() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved as 'light' | 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches 
+      ? 'dark' 
+      : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  return { theme, setTheme };
+}
+```
+
+### /openspec:apply
+
+Review and apply generated changes.
+
+```
+/openspec:apply
+```
+
+This command guides you through:
+1. Reviewing each file change
+2. Running tests
+3. Committing changes
+4. Creating a PR (if using git worktrees)
+
+### /openspec:archive
+
+Archive completed proposals for future reference.
+
+```
+/openspec:archive [proposal name]
+```
+
+Stores the proposal in `.maestro/openspec/archive/` with:
+- Original proposal
+- Implementation notes
+- Commit hash
+- Completion date
+
+## Quick Start Workflow
+
+<Steps>
+  <Step title="Create a proposal">
+    ```
+    /openspec:proposal Add keyboard shortcut for toggling sidebar
+    ```
+    
+    Review the generated proposal and refine if needed.
+  </Step>
+
+  <Step title="Generate implementation">
+    ```
+    /openspec:implement [paste proposal]
+    ```
+    
+    Review the generated code in the AI output.
+  </Step>
+
+  <Step title="Apply changes">
+    Copy the code to your files or use the Edit tool to apply changes directly.
+  </Step>
+
+  <Step title="Test and iterate">
+    Run the feature, test edge cases, and iterate with follow-up prompts:
+    ```
+    The sidebar doesn't remember its state on refresh. Fix it.
+    ```
+  </Step>
+</Steps>
+
+## Integration Patterns
+
+### With Git Worktrees
+
+```bash
+# Create a worktree for the feature
+Create worktree → "feature/dark-mode"
+
+# In the worktree agent
+/openspec:proposal Add dark mode support
+/openspec:implement [paste proposal]
+
+# Apply, test, commit
+/openspec:apply
+
+# Create PR when done
+Create PR from worktree menu
+```
+
+### With Auto Run
+
+Convert OpenSpec proposals to Auto Run checklists:
+
+```
+/openspec:proposal Multi-step feature with 3 components
+
+# Then in Auto Run markdown:
+## Feature Implementation
+
+- [ ] Component A: [description from proposal]
+- [ ] Component B: [description from proposal]  
+- [ ] Component C: [description from proposal]
+- [ ] Integration tests
+```
+
+### With Group Chat
+
+Use OpenSpec in group discussions:
+
+```
+@backend /openspec:proposal Add API endpoint for user preferences
+@frontend /openspec:proposal Create settings UI for user preferences
+```
+
+The moderator can coordinate implementation across agents.
+
+## Customization
+
+OpenSpec prompts are stored in `src/prompts/openspec/`:
+
+- `openspec.proposal.md` - Proposal template
+- `openspec.implement.md` - Implementation guidance
+- `openspec.apply.md` - Review and merge workflow
+- `openspec.archive.md` - Archival format
+
+Edit these files to customize the workflow for your project.
+
+## When to Use OpenSpec
+
+<AccordionGroup>
+  <Accordion title="Prototyping">
+    Testing ideas quickly without full specifications. Perfect for hackathons and proof-of-concepts.
+  </Accordion>
+
+  <Accordion title="Bug fixes">
+    Small, well-scoped fixes that don't need extensive planning.
+  </Accordion>
+
+  <Accordion title="Learning">
+    Exploring new libraries or patterns. Generate working examples fast.
+  </Accordion>
+
+  <Accordion title="Iteration">
+    Rapidly iterating on existing features based on feedback.
+  </Accordion>
+</AccordionGroup>
+
+## When to Use Spec-Kit Instead
+
+<Warning>
+Use Spec-Kit for:
+- Production features with multiple stakeholders
+- Complex changes affecting many systems
+- Features requiring detailed documentation
+- When you need a clear audit trail
+</Warning>
+
+## Best Practices
+
+1. **Keep proposals brief** - 1-2 paragraphs maximum
+2. **Iterate in small steps** - Multiple small proposals beat one large one
+3. **Test as you go** - Don't accumulate untested changes
+4. **Archive completed work** - Build a knowledge base of solutions
+5. **Use with version control** - Always work in a branch or worktree
+
+<CardGroup cols={2}>
+  <Card title="Spec-Kit Commands" icon="list-check" href="/cli/speckit-commands">
+    For rigorous specification workflow
+  </Card>
+  <Card title="Custom Commands" icon="wand-magic-sparkles" href="/guides/custom-commands">
+    Create your own slash commands
+  </Card>
+</CardGroup>

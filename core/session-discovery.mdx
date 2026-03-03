@@ -1,0 +1,431 @@
+---
+title: Session Discovery & Import
+description: Browse, search, and resume AI provider sessions across all your projects
+---
+
+Maestro's **Session Discovery** feature lets you browse and resume AI provider sessions from external sources like Claude Code's session history. Access conversations from any project, search by content, and resume them in new tabs.
+
+## Opening the Session Browser
+
+<Tabs>
+  <Tab title="Keyboard">
+    ```bash
+    Cmd+Shift+L        # View agent sessions
+    ```
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:45-49`
+  </Tab>
+  
+  <Tab title="Quick Actions">
+    1. Press `Cmd+K` to open Quick Actions
+    2. Type "sessions" or "browse"
+    3. Select **View Agent Sessions**
+  </Tab>
+  
+  <Tab title="Main Panel">
+    Click the **Sessions** button in the main panel header (when viewing an AI agent).
+  </Tab>
+</Tabs>
+
+**Modal Component**: `src/renderer/components/AgentSessionsModal.tsx`
+
+## Supported Providers
+
+<Tabs>
+  <Tab title="Claude Code">
+    **Full Support**
+
+    Maestro reads Claude Code's session history from `~/.claude/projects/`.
+
+    ### What You Get
+
+    - Complete conversation history
+    - Token usage statistics
+    - Cache hit/creation metrics
+    - Cost tracking (USD)
+    - Message timestamps
+    - Project context
+
+    ### Path Encoding
+
+    Claude Code encodes project paths by replacing `/` with `-`:
+
+    ```
+    /Users/you/Projects/Maestro
+    → ~/.claude/projects/-Users-you-Projects-Maestro/
+    ```
+
+    **Implementation**: `src/main/index.ts` (IPC handlers)
+  </Tab>
+  
+  <Tab title="Other Agents">
+    **Planned**
+
+    Session discovery for other agents (OpenCode, Codex, Factory Droid) is planned for future releases.
+
+    Currently, session import is specific to Claude Code's file structure.
+  </Tab>
+</Tabs>
+
+## Session Browser Interface
+
+### Main List View
+
+The session browser displays:
+
+<Steps>
+  <Step title="Session Cards">
+    Each session shows:
+    
+    - **First message preview** (truncated)
+    - **Message count** (total conversation turns)
+    - **Last modified** (relative time)
+    - **File size** (session data size)
+    - **Star status** (if starred in Maestro)
+  </Step>
+  
+  <Step title="Search Bar">
+    Search sessions by:
+    
+    - Message content (searches all messages)
+    - Session names (if named in Maestro)
+    - User messages only
+    - Assistant responses only
+    
+    **IPC Handler**: `claude:searchSessions`
+  </Step>
+  
+  <Step title="Sort Options">
+    Sort by:
+    
+    - **Recently modified** (default)
+    - **Creation date**
+    - **Message count**
+    - **File size**
+  </Step>
+</Steps>
+
+### Session Detail View
+
+Click any session to view its full conversation:
+
+```typescript
+// Session message structure
+interface SessionMessage {
+  type: string;
+  role?: string;           // 'user' | 'assistant'
+  content: string;         // Message text or tool output
+  timestamp: string;       // ISO 8601 timestamp
+  uuid: string;            // Unique message ID
+  toolUse?: any;          // Tool call metadata
+}
+```
+
+**Features**:
+
+- Paginated message loading (20 messages per page)
+- Syntax-highlighted code blocks
+- Tool call cards with expand/collapse
+- Scroll position preservation
+- Copy message content
+
+**Component**: `src/renderer/components/AgentSessionsModal.tsx:238-420`
+
+## Search Capabilities
+
+### Search Modes
+
+<Tabs>
+  <Tab title="All Content">
+    ```typescript
+    // Search everywhere (default)
+    const results = await window.maestro.claude.searchSessions(
+      projectPath,
+      'query',
+      'all'
+    );
+    ```
+    
+    Searches both user messages and assistant responses.
+  </Tab>
+  
+  <Tab title="User Messages">
+    ```typescript
+    // Search only what you asked
+    const results = await window.maestro.claude.searchSessions(
+      projectPath,
+      'query',
+      'user'
+    );
+    ```
+    
+    Useful for finding "when did I ask about X?"
+  </Tab>
+  
+  <Tab title="Assistant">
+    ```typescript
+    // Search AI responses
+    const results = await window.maestro.claude.searchSessions(
+      projectPath,
+      'query',
+      'assistant'
+    );
+    ```
+    
+    Find where the AI explained a specific concept.
+  </Tab>
+  
+  <Tab title="Title Only">
+    ```typescript
+    // Search session names/first messages
+    const results = await window.maestro.claude.searchSessions(
+      projectPath,
+      'query',
+      'title'
+    );
+    ```
+    
+    Quick filter by session title.
+  </Tab>
+</Tabs>
+
+**IPC Handler**: `src/main/index.ts` → `claude:searchSessions`
+
+## Resuming Sessions
+
+When you resume a session, Maestro:
+
+<Steps>
+  <Step title="Creates New Tab">
+    Opens a fresh AI tab in the current agent.
+  </Step>
+  
+  <Step title="Links Session ID">
+    Associates the tab with the provider session ID:
+    
+    ```typescript
+    interface AITab {
+      id: string;
+      agentSessionId?: string;  // Claude session ID
+      // ...
+    }
+    ```
+  </Step>
+  
+  <Step title="Loads Context">
+    The AI provider (Claude Code) loads the full conversation history from its session storage.
+  </Step>
+  
+  <Step title="Continues Conversation">
+    You can immediately continue where you left off - all context is preserved.
+  </Step>
+</Steps>
+
+<Tip>
+  **Pro Tip**: Resume the same session in multiple tabs to explore different branches of a conversation without losing the original thread.
+</Tip>
+
+## Global Statistics
+
+View aggregated statistics across **all your Claude Code sessions**:
+
+```bash
+# Open Session Browser, then click "Global Stats" tab
+```
+
+### Metrics Tracked
+
+```typescript
+interface GlobalStats {
+  totalSessions: number;              // Total session count
+  totalMessages: number;              // All messages across sessions
+  totalInputTokens: number;           // Input token usage
+  totalOutputTokens: number;          // Output token usage
+  totalCacheReadTokens: number;       // Cache hits
+  totalCacheCreationTokens: number;   // Cache writes
+  totalCostUsd: number;               // Estimated cost in USD
+  totalSizeBytes: number;             // Total storage used
+}
+```
+
+### Streaming Updates
+
+Global stats calculation is **progressive** - you see results as they're computed:
+
+```typescript
+// Subscribe to streaming updates
+const unsubscribe = window.maestro.claude.onGlobalStatsUpdate((stats) => {
+  console.log(`Progress: ${stats.totalSessions} sessions`);
+  console.log(`Cost so far: $${stats.totalCostUsd.toFixed(2)}`);
+  
+  if (stats.isComplete) {
+    console.log('Stats calculation complete!');
+  }
+});
+
+// Cleanup
+unsubscribe();
+```
+
+**IPC Handler**: `src/main/index.ts` → `claude:getGlobalStats`, `claude:onGlobalStatsUpdate`
+
+## IPC API Reference
+
+All session discovery features use these IPC handlers:
+
+### List Sessions
+
+```typescript
+const sessions = await window.maestro.claude.listSessions(projectPath);
+// Returns: AgentSession[]
+```
+
+**Returns**:
+
+```typescript
+interface AgentSession {
+  sessionId: string;
+  projectPath: string;
+  timestamp: string;         // Creation time
+  modifiedAt: string;        // Last modified
+  firstMessage: string;      // Preview text
+  messageCount: number;
+  sizeBytes: number;
+  sessionName?: string;      // Custom name from Maestro
+  starred?: boolean;         // Star status from Maestro
+}
+```
+
+### Read Messages
+
+```typescript
+const { messages, total, hasMore } = await window.maestro.claude.readSessionMessages(
+  projectPath,
+  sessionId,
+  { offset: 0, limit: 20 }
+);
+```
+
+**Pagination**: Load 20 messages at a time for performance.
+
+### Search
+
+```typescript
+const results = await window.maestro.claude.searchSessions(
+  projectPath,
+  'search query',
+  'all' // 'title' | 'user' | 'assistant' | 'all'
+);
+```
+
+### Global Stats
+
+```typescript
+// One-time fetch
+const stats = await window.maestro.claude.getGlobalStats();
+
+// Subscribe to updates
+const unsubscribe = window.maestro.claude.onGlobalStatsUpdate((stats) => {
+  // Handle progressive updates
+});
+```
+
+**Source**: `src/main/preload.ts:203-226`
+
+## Storage Location
+
+### Claude Code Sessions
+
+```bash
+~/.claude/projects/{encoded-path}/
+├── settings.json
+└── sessions/
+    ├── {session-id}/
+    │   ├── messages.jsonl
+    │   ├── metadata.json
+    │   └── usage.json
+    └── ...
+```
+
+### Maestro Metadata
+
+```bash
+~/Library/Application Support/maestro/
+├── maestro-sessions.json    # Links sessions to Maestro tabs
+└── maestro-settings.json    # Star status, custom names
+```
+
+<Info>
+  Maestro never modifies Claude Code's session files - it only reads them. Your session data remains pristine.
+</Info>
+
+## Starring Sessions
+
+Mark important sessions with a star:
+
+1. Click the star icon in the session list
+2. Starred sessions appear at the top
+3. Star status persists in Maestro's settings
+
+```typescript
+// Star status stored in Maestro settings
+starredSessions: Set<string>  // Set of session IDs
+```
+
+## Keyboard Navigation
+
+Navigate the session browser with keyboard:
+
+```bash
+# In Session List
+↑/↓               # Select previous/next session
+Enter             # Open selected session detail
+Esc               # Close browser (or back from detail)
+
+# In Search
+Cmd+F             # Focus search input
+Esc               # Clear search and refocus list
+```
+
+## Performance Optimizations
+
+<AccordionGroup>
+  <Accordion title="Pagination">
+    Sessions and messages are loaded in batches to handle large histories:
+    
+    - **Session list**: Load 50 at a time
+    - **Message list**: Load 20 at a time
+    - **Infinite scroll**: Auto-load more as you scroll
+  </Accordion>
+  
+  <Accordion title="Lazy Loading">
+    Message content is loaded only when you open a session detail view.
+    
+    The list view shows only metadata (first message, counts, timestamps).
+  </Accordion>
+  
+  <Accordion title="Search Indexing">
+    Search uses streaming file reads with line-by-line matching to avoid loading entire sessions into memory.
+  </Accordion>
+  
+  <Accordion title="Progressive Stats">
+    Global stats are calculated incrementally with UI updates every 100ms to show progress.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Agent Management" icon="users" href="/core/agent-management">
+    Create and organize agents
+  </Card>
+  <Card title="Dual-Mode Sessions" icon="toggle-on" href="/core/dual-mode-sessions">
+    Switch between AI and terminal
+  </Card>
+  <Card title="File Explorer" icon="folder" href="/core/file-explorer">
+    Browse files and use @-mentions
+  </Card>
+  <Card title="Git Integration" icon="git-branch" href="/core/git-integration">
+    Version control features
+  </Card>
+</CardGroup>

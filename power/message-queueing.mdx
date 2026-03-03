@@ -1,0 +1,386 @@
+---
+title: "Message Queue System"
+description: "Understand how Maestro queues and sequences commands to prevent conflicts"
+---
+
+## Overview
+
+Maestro's message queue system ensures commands execute sequentially per agent, preventing file conflicts and maintaining state consistency.
+
+<Info>
+  The queue automatically manages concurrent operations, so you can send multiple commands without worrying about conflicts.
+</Info>
+
+## Queue Architecture
+
+### Per-Agent Isolation
+
+Each agent maintains its own execution queue:
+
+```typescript
+interface Session {
+  id: string
+  executionQueue: QueuedItem[]
+  state: 'ready' | 'busy' | 'connecting' | 'error'
+}
+```
+
+Benefits:
+- **Parallel Execution** - Different agents run concurrently
+- **Sequential Safety** - Same agent processes one command at a time
+- **No File Conflicts** - Agent workspace locked during execution
+
+### Queue Items
+
+```typescript
+interface QueuedItem {
+  id: string                    // Unique identifier
+  type: 'message' | 'command'   // Item type
+  text?: string                 // Message content
+  command?: string              // Command to execute
+  commandDescription?: string   // Command description
+  images?: string[]            // Attached images
+  timestamp: number            // When queued
+  tabName?: string             // Source tab
+}
+```
+
+## Queue Behavior
+
+### When Commands Queue
+
+Commands queue when the agent is busy:
+
+<Tabs>
+  <Tab title="Ready State">
+    ✅ Command executes immediately
+    
+    ```typescript
+    agent.state === 'ready'
+    // Execute now, queue remains empty
+    ```
+  </Tab>
+  
+  <Tab title="Busy State">
+    ⏳ Command queues for later
+    
+    ```typescript
+    agent.state === 'busy'
+    // Add to queue, execute when ready
+    executionQueue.push(newItem)
+    ```
+  </Tab>
+</Tabs>
+
+### Queue Processing
+
+<Steps>
+  <Step title="Command Received">
+    User sends message or executes command
+  </Step>
+  
+  <Step title="Check Agent State">
+    If ready → execute immediately
+    
+    If busy → add to queue
+  </Step>
+  
+  <Step title="Command Executes">
+    Agent processes the command
+  </Step>
+  
+  <Step title="Completion">
+    Agent returns to ready state
+  </Step>
+  
+  <Step title="Next Item">
+    If queue not empty, process next item
+  </Step>
+</Steps>
+
+## Queue Indicators
+
+### Visual Feedback
+
+The UI shows queue status:
+
+```typescript
+// Execution queue indicator badge
+{executionQueue.length > 0 && (
+  <span className="queue-badge">
+    {executionQueue.length}
+  </span>
+)}
+```
+
+### Queue Browser
+
+View and manage queued items:
+
+<CodeGroup>
+```typescript Open Browser
+// Keyboard shortcut or button click
+onOpenExecutionQueueBrowser()
+
+// Shows:
+- All queued items across agents
+- Current vs global view
+- Drag-and-drop reordering
+```
+
+```typescript Browser Features
+interface ExecutionQueueBrowserProps {
+  sessions: Session[]
+  activeSessionId: string | null
+  onRemoveItem: (sessionId: string, itemId: string) => void
+  onReorderItems: (sessionId: string, from: number, to: number) => void
+}
+```
+</CodeGroup>
+
+## Queue Management
+
+### Reordering
+
+Drag and drop to change execution order:
+
+```typescript
+// Reorder within same agent only
+const handleReorder = (sessionId: string, fromIndex: number, toIndex: number) => {
+  const queue = [...session.executionQueue]
+  const [item] = queue.splice(fromIndex, 1)
+  queue.splice(toIndex, 0, item)
+  
+  updateSession({ ...session, executionQueue: queue })
+}
+```
+
+<Note>
+  Items can only be reordered within the same agent's queue. Cross-agent moves are not supported.
+</Note>
+
+### Removing Items
+
+Cancel queued commands:
+
+```typescript
+// Remove specific item
+const handleRemove = (sessionId: string, itemId: string) => {
+  const queue = session.executionQueue.filter(item => item.id !== itemId)
+  updateSession({ ...session, executionQueue: queue })
+}
+
+// Clear all queued items
+const clearQueue = (sessionId: string) => {
+  updateSession({ ...session, executionQueue: [] })
+}
+```
+
+### View Modes
+
+<Tabs>
+  <Tab title="Current Agent">
+    Show queue for active agent only
+    
+    ```typescript
+    viewMode: 'current'
+    filteredSessions = sessions.filter(s => s.id === activeSessionId)
+    ```
+  </Tab>
+  
+  <Tab title="All Agents">
+    Show queues for all agents
+    
+    ```typescript  
+    viewMode: 'global'
+    filteredSessions = sessions.filter(s => s.executionQueue.length > 0)
+    ```
+  </Tab>
+</Tabs>
+
+## Integration Points
+
+### Group Chat
+
+Group chat messages queue when moderator/agents are busy:
+
+```typescript
+// Group chat input
+onSend={(content, images, readOnly) => {
+  if (groupChatState === 'busy') {
+    // Queue for all participants
+    participants.forEach(p => {
+      queueMessage(p.sessionId, content, images)
+    })
+  } else {
+    // Execute immediately
+    sendMessage(content, images, readOnly)
+  }
+}}
+```
+
+### Auto Run
+
+Batch processing locks agent and prevents queueing:
+
+```typescript
+// During Auto Run batch
+if (batchRunState.isRunning && !batchRunState.worktreeActive) {
+  // Agent locked, UI disabled
+  // Queue not available for this agent
+  isLocked = true
+}
+```
+
+<Warning>
+  Auto Run without worktrees locks the agent completely. Use worktrees for parallel work.
+</Warning>
+
+### Slash Commands
+
+Slash commands queue like regular messages:
+
+```typescript
+interface QueuedItem {
+  type: 'command'
+  command: '/fix-typescript'          // Slash command
+  commandDescription: 'Fix TS errors' // Display description
+  tabName: 'Main'                     // Source tab
+  timestamp: 1234567890
+}
+```
+
+## Offline Queue (Mobile)
+
+Mobile interface supports offline queueing:
+
+```typescript
+interface OfflineQueueItem {
+  sessionId: string
+  message: string
+  timestamp: number
+  status: 'pending' | 'sending' | 'sent' | 'error'
+}
+
+// Commands queue locally when offline
+// Auto-send when connection restored
+```
+
+### Sync Behavior
+
+<Steps>
+  <Step title="Offline Command">
+    User sends message while offline
+  </Step>
+  
+  <Step title="Local Queue">
+    Message queues in browser storage
+  </Step>
+  
+  <Step title="Connection Restored">
+    WebSocket reconnects to desktop
+  </Step>
+  
+  <Step title="Sync">
+    Queued messages sent to desktop queue
+  </Step>
+  
+  <Step title="Execution">
+    Desktop processes normally
+  </Step>
+</Steps>
+
+## Performance Considerations
+
+### Queue Limits
+
+<Warning>
+  Large queues can impact performance. Consider:
+  - Maximum queue size per agent
+  - Time-based item expiration  
+  - User warnings for long queues
+</Warning>
+
+```typescript
+// Example limits (not currently enforced)
+const MAX_QUEUE_SIZE = 50
+const QUEUE_ITEM_TTL = 30 * 60 * 1000  // 30 minutes
+
+if (executionQueue.length >= MAX_QUEUE_SIZE) {
+  showWarning('Queue is full. Please wait for items to process.')
+}
+```
+
+### Memory Usage
+
+Queue items with images consume memory:
+
+```typescript
+// Image data stored as base64 data URLs
+interface QueuedItem {
+  images?: string[]  // Full base64 encoded images
+}
+
+// Consider:
+// - Limit image count per item
+// - Compress images before queueing
+// - Clear processed items immediately
+```
+
+## Debugging
+
+### Queue Inspector
+
+View queue state in dev tools:
+
+```typescript
+// Global debug helper
+window.inspectQueue = (sessionId: string) => {
+  const session = sessions.find(s => s.id === sessionId)
+  console.table(session?.executionQueue.map(item => ({
+    type: item.type,
+    preview: item.text?.slice(0, 50) || item.command,
+    images: item.images?.length || 0,
+    age: Date.now() - item.timestamp
+  })))
+}
+```
+
+### Event Logging
+
+```typescript
+// Queue events for debugging
+const queueLogger = {
+  onEnqueue: (sessionId, item) => {
+    console.log(`[Queue] Enqueued ${item.type} for ${sessionId}`, item)
+  },
+  onDequeue: (sessionId, item) => {
+    console.log(`[Queue] Dequeued ${item.type} for ${sessionId}`, item)
+  },
+  onReorder: (sessionId, from, to) => {
+    console.log(`[Queue] Reordered ${sessionId} items: ${from} → ${to}`)
+  }
+}
+```
+
+## Best Practices
+
+### For Users
+
+1. **Monitor Queue Length** - Check queue badge before sending many commands
+2. **Use Worktrees** - Enable worktrees for Auto Run to allow parallel work
+3. **Prioritize** - Reorder queue items to prioritize urgent commands
+4. **Clear Stale Items** - Remove old queued items you no longer need
+
+### For Developers
+
+1. **Always Check State** - Check agent state before executing commands
+2. **Handle Queue Events** - Listen for queue changes to update UI
+3. **Provide Feedback** - Show clear queue indicators in UI
+4. **Test Edge Cases** - Test with full queues, offline mode, errors
+
+## Related Features
+
+- [Group Chat](/power/group-chat) - Multi-agent queue coordination
+- [Mobile Remote](/power/mobile-remote) - Offline queue support
+- [Auto Run](/power/auto-run-playbooks) - Batch processing and locking

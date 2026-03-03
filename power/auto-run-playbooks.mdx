@@ -1,0 +1,305 @@
+---
+title: "Auto Run & Playbooks"
+description: "Automate documentation tasks with saved playbooks and batch processing"
+---
+
+## Overview
+
+Auto Run enables automated processing of Markdown documents with task lists. Playbooks save your batch configurations for repeated execution via the UI or CLI.
+
+<Info>
+  Auto Run watches a folder of Markdown files and processes open tasks (`- [ ]`) when you click Run or execute a playbook.
+</Info>
+
+## Auto Run Basics
+
+### Folder Setup
+
+Auto Run requires a folder containing Markdown documents:
+
+<Steps>
+  <Step title="Select Folder">
+    Click "Select Folder" in the Auto Run panel to choose your documents directory
+  </Step>
+  
+  <Step title="Create Documents">
+    Add `.md` files with task lists:
+    
+    ```markdown Document.md
+    # My Tasks
+    
+    - [ ] First task to complete
+    - [ ] Second task
+    - [x] Already completed task
+    ```
+  </Step>
+  
+  <Step title="Run">
+    Click Run to process unchecked tasks
+  </Step>
+</Steps>
+
+### Document Format
+
+Auto Run recognizes standard Markdown checkboxes:
+
+```markdown
+# Task Categories
+
+## Open Tasks (will be processed)
+- [ ] Unchecked task
+- [ ] Another open task
+
+## Completed Tasks (skipped)
+- [x] Checked task
+- [X] Also checked (uppercase X)
+```
+
+### Template Variables
+
+Use template variables in your documents for dynamic content:
+
+<CodeGroup>
+```markdown Basic Variables
+Project: {{PROJECT_NAME}}
+Date: {{CURRENT_DATE}}
+Branch: {{GIT_BRANCH}}
+```
+
+```markdown Advanced
+Working directory: {{CWD}}
+Username: {{USERNAME}}
+Timestamp: {{TIMESTAMP}}
+```
+</CodeGroup>
+
+## Playbooks
+
+Playbooks save batch configurations for repeated execution:
+
+### Creating a Playbook
+
+<Steps>
+  <Step title="Configure Batch Run">
+    In the Batch Runner modal, select:
+    - Documents to process
+    - Loop settings (optional)
+    - Worktree configuration (optional)
+  </Step>
+  
+  <Step title="Save as Playbook">
+    Click "Save as Playbook" and provide:
+    - Name
+    - Description (optional)
+  </Step>
+  
+  <Step title="Execute Anytime">
+    Run from UI or CLI with saved configuration
+  </Step>
+</Steps>
+
+### Playbook Structure
+
+```typescript
+interface Playbook {
+  id: string
+  name: string
+  description?: string
+  documents: string[]           // Document filenames
+  loopEnabled: boolean          // Run until no open tasks
+  maxLoops: number | null       // Limit iterations (null = unlimited)
+  sessionId: string             // Agent that owns this playbook
+  createdAt: number
+  updatedAt: number
+}
+```
+
+### Loop Mode
+
+Enable loop mode to run until all tasks are completed:
+
+<Tabs>
+  <Tab title="Single Pass">
+    ```typescript
+    loopEnabled: false
+    ```
+    Processes each document once
+  </Tab>
+  
+  <Tab title="Loop Until Complete">
+    ```typescript
+    loopEnabled: true
+    maxLoops: null  // Unlimited
+    ```
+    Runs until no open tasks remain
+  </Tab>
+  
+  <Tab title="Limited Loops">
+    ```typescript
+    loopEnabled: true
+    maxLoops: 5     // Maximum 5 iterations
+    ```
+    Runs up to 5 times or until complete
+  </Tab>
+</Tabs>
+
+## CLI Execution
+
+Run playbooks from the command line for automation:
+
+### List Playbooks
+
+```bash
+# List all playbooks
+maestro-cli list playbooks
+
+# List playbooks for specific agent
+maestro-cli list playbooks --agent <agent-id>
+
+# JSON output for scripting
+maestro-cli list playbooks --json
+```
+
+### Run Playbook
+
+```bash
+# Run a playbook (supports partial IDs)
+maestro-cli playbook <playbook-id>
+
+# Dry run to preview
+maestro-cli playbook <playbook-id> --dry-run
+
+# Wait if agent is busy
+maestro-cli playbook <playbook-id> --wait
+
+# JSON output for parsing
+maestro-cli playbook <playbook-id> --json
+
+# Debug mode
+maestro-cli playbook <playbook-id> --debug --verbose
+```
+
+<Note>
+  Playbook IDs support prefix matching. You can use just the first few characters if unambiguous.
+</Note>
+
+### Output Formats
+
+<CodeGroup>
+```bash Human Readable
+maestro-cli playbook abc123
+
+Running playbook: Update Documentation
+Agent: My Agent
+Documents: 5
+Loop: enabled (max 3)
+
+[1/5] Processing Document1.md...
+✓ Task completed: Update introduction
+✓ Task completed: Add examples
+```
+
+```json JSON Output
+maestro-cli playbook abc123 --json
+
+{"type":"start","playbook":"Update Documentation","documents":5}
+{"type":"document_start","index":0,"name":"Document1.md"}
+{"type":"task_complete","task":"Update introduction"}
+{"type":"document_complete","index":0,"duration":1250}
+```
+</CodeGroup>
+
+## Batch Processing Events
+
+The batch processor emits events during execution:
+
+```typescript
+type RunEvent =
+  | { type: 'start'; playbook: string; documents: number }
+  | { type: 'document_start'; index: number; name: string }
+  | { type: 'document_complete'; index: number; duration: number }
+  | { type: 'task_complete'; task: string }
+  | { type: 'loop_start'; iteration: number }
+  | { type: 'loop_complete'; totalIterations: number }
+  | { type: 'complete'; totalDuration: number }
+  | { type: 'error'; message: string }
+```
+
+## Agent Concurrency
+
+Playbooks prevent concurrent execution on the same agent:
+
+<Warning>
+  If an agent is already running a playbook (from CLI or desktop), new executions will fail unless `--wait` is used.
+</Warning>
+
+```bash
+# Will fail if agent is busy
+maestro-cli playbook abc123
+
+# Will wait for agent to become available
+maestro-cli playbook abc123 --wait
+```
+
+## Marketplace Integration
+
+Import playbooks from the marketplace:
+
+<Steps>
+  <Step title="Browse Marketplace">
+    Open Marketplace modal (Cmd+Shift+M)
+  </Step>
+  
+  <Step title="Find Playbook">
+    Search for playbooks by name or description
+  </Step>
+  
+  <Step title="Import">
+    Click Import to add to your agent
+  </Step>
+  
+  <Step title="Customize">
+    Edit documents and settings as needed
+  </Step>
+</Steps>
+
+## Export & Share
+
+Export playbooks as ZIP files with all assets:
+
+```typescript
+// Exported structure
+playbook.zip
+├── playbook.json          // Playbook configuration
+├── documents/
+│   ├── Document1.md      // All referenced documents
+│   └── Document2.md
+└── images/               // Embedded images from documents
+    └── screenshot.png
+```
+
+<Info>
+  Exported playbooks include all documents and embedded images, making them portable across machines.
+</Info>
+
+## Error Handling
+
+Batch runs can pause on errors:
+
+```typescript
+// When a document fails
+batchRunState.errorPaused = true
+batchRunState.error = "Agent error message"
+batchRunState.errorDocumentIndex = 2
+
+// Recovery options
+- Skip current document
+- Abort batch run
+- Resume (if error resolved)
+```
+
+## Related Features
+
+- [Git Worktrees](/power/git-worktrees) - Run batches in isolated branches
+- [CLI Tool](/power/cli-tool) - Complete CLI reference
+- [Message Queue](/power/message-queueing) - Understand execution queue

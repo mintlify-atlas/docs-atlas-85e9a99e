@@ -1,0 +1,226 @@
+---
+title: System Architecture
+description: Technical architecture overview of Maestro's dual-process design, IPC security, and core systems
+icon: sitemap
+---
+
+# System Architecture
+
+Maestro is built on Electron with a strict security model separating the Node.js backend from the React frontend. This page provides a high-level overview of the architecture—for detailed technical documentation, see the [ARCHITECTURE.md](https://github.com/RunMaestro/Maestro/blob/main/ARCHITECTURE.md) file in the source repository.
+
+## Dual-Process Architecture
+
+Maestro uses Electron's main/renderer split with strict context isolation:
+
+<CardGroup cols={2}>
+  <Card title="Main Process" icon="server">
+    Node.js backend with full system access:
+    - Process spawning (PTY for terminals, child_process for AI agents)
+    - File system operations
+    - Git integration
+    - IPC handlers
+    - Secure command execution
+  </Card>
+  <Card title="Renderer Process" icon="window">
+    React frontend with no direct Node.js access:
+    - UI components
+    - Custom React hooks (15 hooks)
+    - IPC wrappers
+    - Theme system
+    - State management
+  </Card>
+</CardGroup>
+
+## Security Model
+
+Maestro enforces security through Electron best practices:
+
+- **Context isolation**: Enabled (renderer has no Node.js access)
+- **Node integration**: Disabled (no `require()` in renderer)
+- **Preload script**: Exposes minimal API via `contextBridge.exposeInMainWorld('maestro', ...)`
+- **Command execution**: Uses `execFileNoThrow` with `spawn()` and `shell: false` for security
+
+### The `window.maestro` API
+
+All renderer-to-main communication flows through the preload-exposed API:
+
+```typescript
+window.maestro = {
+  // Core persistence
+  settings: { get, set, getAll },
+  sessions: { getAll, setAll },
+  groups: { getAll, setAll },
+  history: { getAll, setAll },
+
+  // Process management
+  process: { spawn, write, interrupt, kill, resize, ... },
+
+  // Git operations
+  git: { status, diff, isRepo, branches, log, createPR, ... },
+
+  // File system
+  fs: { readDir, readFile },
+
+  // Agent management
+  agents: { detect, get, getConfig, setConfig, ... },
+
+  // Claude Code integration
+  claude: { listSessions, readSessionMessages, searchSessions, ... },
+
+  // Web/remote interface
+  webserver: { getUrl, getClientCount },
+  tunnel: { start, stop, getStatus, ... },
+
+  // Auto Run
+  autorun: { listDocs, readDoc, writeDoc, ... },
+  playbooks: { list, create, update, delete },
+}
+```
+
+## Agent Model
+
+Each agent (what users see in the Left Bar) runs **two processes simultaneously**:
+
+```typescript
+interface Session {
+  id: string;            // Unique identifier
+  aiPid: number;         // AI agent process (suffixed -ai)
+  terminalPid: number;   // Terminal process (suffixed -terminal)
+  inputMode: 'ai' | 'terminal'; // Which process receives input
+}
+```
+
+This enables seamless switching between AI and terminal modes (`Cmd+J`) without process restarts.
+
+## Key Systems
+
+### Layer Stack System
+
+Centralized modal/overlay management with predictable Escape key handling. Each modal registers with a priority value:
+
+- **STANDING_OVATION**: 1100 (highest—achievement celebrations)
+- **CONFIRM**: 1000 (confirmation dialogs)
+- **QUICK_ACTION**: 700 (Command palette `Cmd+K`)
+- **SETTINGS**: 450
+- **GIT_DIFF**: 200
+- **FILE_PREVIEW**: 100 (lowest)
+
+### Process Manager
+
+Handles two process types:
+
+1. **PTY Processes** (via `node-pty`) - Terminal sessions with full shell emulation
+2. **Child Processes** (via `child_process.spawn`) - AI agents with direct stdin/stdout capture
+
+**Batch Mode**: Claude Code and similar agents run with `--print --output-format json` for non-interactive execution.
+
+**Stream-JSON Mode**: When images are attached, agents use `--input-format stream-json` for multimodal input.
+
+### AI Tab System
+
+Multiple conversation tabs within each agent:
+
+- Each tab maintains its own provider session ID
+- Per-tab read-only mode and save-to-history toggles
+- Unread filtering and starring
+- Tab switcher modal (`Alt+Cmd+T`)
+
+### File Preview Tab System
+
+File viewing integrated into the tab bar alongside AI tabs:
+
+- Unified tab order with AI and file tabs
+- State persistence (scroll position, search query, edit mode)
+- SSH remote file support
+- Extension-based color badges
+- Deduplication within sessions
+
+### Execution Queue
+
+Sequential message processing to prevent race conditions:
+
+- **Write operations** queue sequentially
+- **Read-only operations** can run in parallel
+- Auto Run tasks queue with regular messages
+- Visible via indicator in tab bar
+
+### Auto Run System
+
+File-based document runner for automating multi-step tasks:
+
+- Markdown documents with checkbox tasks
+- Playbooks for repeatable workflows
+- Git worktree integration for parallel execution
+- Loop mode with reset-on-completion
+- Per-document progress tracking
+
+### Group Chat System
+
+Multi-agent coordination with moderator AI:
+
+- Moderator orchestrates conversations via @mentions
+- Agents work in parallel
+- Synthesis rounds after all agents respond
+- Conversation loops until complete
+
+## Custom Hooks
+
+Maestro uses 15 custom React hooks for state management:
+
+| Hook | Purpose |
+|------|--------|
+| `useSettings` | Application settings with auto-persistence |
+| `useSessionManager` | Agent CRUD operations and groups |
+| `useFileTreeManagement` | File tree refresh and git metadata |
+| `useBatchProcessor` | Auto Run batch execution |
+| `useLayerStack` | Modal/overlay management |
+| `useNavigationHistory` | Back/forward navigation |
+| `useAchievements` | Achievement/badge system |
+| `useActivityTracker` | User activity tracking |
+
+## Settings Persistence
+
+Settings stored via `electron-store`:
+
+**Locations:**
+- **macOS**: `~/Library/Application Support/maestro/`
+- **Windows**: `%APPDATA%/maestro/`
+- **Linux**: `~/.config/maestro/`
+
+**Files:**
+- `maestro-settings.json` - User preferences
+- `maestro-sessions.json` - Agent persistence
+- `maestro-groups.json` - Agent groups
+- `maestro-agent-configs.json` - Per-agent configuration
+
+## Theme System
+
+Themes defined with mode-specific color palettes:
+
+```typescript
+interface Theme {
+  id: ThemeId;
+  name: string;
+  mode: 'light' | 'dark' | 'vibe';
+  colors: {
+    bgMain: string;         // Main content background
+    bgSidebar: string;      // Sidebar background
+    textMain: string;       // Primary text
+    accent: string;         // Accent color
+    accentForeground: string; // Text ON accent backgrounds
+    success: string;        // Success state (green)
+    warning: string;        // Warning state (yellow)
+    error: string;          // Error state (red)
+  };
+}
+```
+
+**Available themes**: Dracula, Monokai, Nord, Tokyo Night, GitHub Light, Solarized, Catppuccin, Gruvbox, and more.
+
+## For Developers
+
+For detailed architecture documentation including code patterns, IPC handlers, and implementation guides, see:
+
+- [ARCHITECTURE.md](https://github.com/RunMaestro/Maestro/blob/main/ARCHITECTURE.md) - Complete architecture guide
+- [CONTRIBUTING.md](https://github.com/RunMaestro/Maestro/blob/main/CONTRIBUTING.md) - Development setup and patterns
+- [CLAUDE.md](https://github.com/RunMaestro/Maestro/blob/main/CLAUDE.md) - AI-focused development guide

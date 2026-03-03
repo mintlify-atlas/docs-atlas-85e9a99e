@@ -1,0 +1,550 @@
+---
+title: Features Overview
+description: Comprehensive overview of all Maestro features including Git Worktrees, Auto Run, Group Chat, Remote Access, and keyboard-first design.
+---
+
+# Features Overview
+
+Maestro is packed with features designed for power users who need to orchestrate multiple AI agents across multiple projects. This guide provides a comprehensive overview of all capabilities.
+
+## Power Features
+
+### Git Worktrees
+
+Run AI agents in parallel on isolated branches without conflicts.
+
+<Card title="Git Worktrees" icon="code-branch" href="/power/git-worktrees">
+  Create worktree sub-agents from the git branch menu, each operating in their own directory. Work interactively in the main repo while sub-agents process tasks independently—then create PRs with one click. True parallel development without conflicts.
+</Card>
+
+**Key Benefits:**
+- Isolated workspaces for each branch
+- No git conflicts between parallel agents
+- One-click PR creation
+- Automatic cleanup when done
+
+**Use Cases:**
+- Running multiple feature branches simultaneously
+- Testing different approaches in parallel
+- Delegating tasks to sub-agents while you work on main
+
+### Auto Run & Playbooks
+
+File-system-based task runner that batch-processes markdown checklists through AI agents.
+
+<Card title="Auto Run & Playbooks" icon="play" href="/power/auto-run-playbooks">
+  Create playbooks for repeatable workflows, run in loops, and track progress with full history. Each task gets its own AI session for clean conversation context.
+</Card>
+
+**Features:**
+- Process markdown checkboxes as tasks
+- Save configurations as reusable Playbooks
+- Loop mode for continuous processing
+- Session isolation (each task = fresh context)
+- Reset on completion (working copies in `Runs/` subfolder)
+- Full task execution history
+
+**Creating Tasks:**
+```markdown
+# Feature Implementation Plan
+
+- [ ] Implement user authentication
+- [ ] Add unit tests for the login flow
+- [ ] Update API documentation
+```
+
+<Tip>
+Press `Cmd+L` (macOS) or `Ctrl+L` (Windows/Linux) to quickly insert a new checkbox at your cursor position.
+</Tip>
+
+**Inline Wizard:**
+Generate new playbooks from within an existing session by typing `/wizard`. The AI will have a conversation about your project goals and generate detailed Auto Run documents at 80%+ confidence.
+
+### Playbook Exchange
+
+Browse and import community-contributed playbooks directly into your Auto Run folder.
+
+<Card title="Playbook Exchange" icon="store" href="/cli/playbook-exchange">
+  Categories, search, and one-click import get you started with proven workflows for security audits, code reviews, documentation, and more.
+</Card>
+
+Access via Quick Actions (`Cmd+K` / `Ctrl+K`) or the Exchange button in the Auto Run panel.
+
+### Maestro Symphony
+
+Contribute to open source by donating AI tokens.
+
+<Card title="Maestro Symphony" icon="music" href="/power/group-chat">
+  Browse registered projects, select GitHub issues, and let Maestro clone, process Auto Run docs, and create PRs automatically. Distributed computing for AI-assisted development.
+</Card>
+
+Participate in the open source community by letting your AI agents work on registered projects while you focus on other tasks.
+
+### Group Chat
+
+Coordinate multiple AI agents in a single conversation.
+
+<Card title="Group Chat" icon="comments" href="/power/group-chat">
+  A moderator AI orchestrates discussions, routing questions to the right agents and synthesizing their responses for cross-project questions and architecture discussions.
+</Card>
+
+**Create a Group Chat:**
+- Press `Alt+Cmd+C` (macOS) or `Alt+Ctrl+C` (Windows/Linux)
+- Or use Quick Actions → "New Group Chat"
+
+**How it works:**
+1. You ask a question
+2. Moderator AI determines which agents should respond
+3. Each agent processes the question in their context
+4. Moderator synthesizes responses into a cohesive answer
+
+**Use Cases:**
+- Cross-project architecture questions
+- Comparing approaches across different codebases
+- Multi-agent brainstorming sessions
+
+### Remote Access
+
+Built-in web server with QR code access for monitoring and controlling agents from your phone.
+
+<Card title="Remote Access" icon="mobile" href="/power/mobile-remote">
+  Supports local network access and remote tunneling via Cloudflare for access from anywhere.
+</Card>
+
+**Features:**
+- Mobile-optimized interface
+- QR code for instant connection
+- View all agent conversations
+- Send messages and commands
+- Monitor Auto Run progress
+- Cloudflare tunnel for remote access
+
+### SSH Remote Execution
+
+Run AI agents on remote hosts via SSH.
+
+<Card title="SSH Remote Execution" icon="server" href="/guides/ssh-remote-execution">
+  Leverage powerful cloud VMs, access tools not installed locally, or work with projects requiring specific environments—all while controlling everything from your local Maestro instance.
+</Card>
+
+**Benefits:**
+- Use powerful cloud compute for AI tasks
+- Access tools and environments not available locally
+- Work with projects that require specific OS or dependencies
+- All configuration and control from local Maestro
+
+### Command Line Interface
+
+Full CLI (`maestro-cli`) for headless operation.
+
+<Card title="Command Line Interface" icon="terminal" href="/cli/overview">
+  List agents/groups, run playbooks from cron jobs or CI/CD pipelines, with human-readable or JSONL output for scripting.
+</Card>
+
+**Example Commands:**
+```bash
+# Send a message to an agent
+maestro-cli send <agent-id> "describe the authentication flow"
+
+# List all agents
+maestro-cli list agents
+
+# Run a playbook
+maestro-cli playbook run <playbook-name> --agent <agent-id>
+
+# List all groups
+maestro-cli list groups
+```
+
+## Core Features
+
+### Dual-Mode Sessions
+
+Each agent has both an **AI Terminal** and **Command Terminal**.
+
+- **AI Terminal**: Talk with your AI provider, manage tabs, view conversation history
+- **Command Terminal**: Run shell commands, execute scripts, interact with your system
+
+Switch seamlessly between them with `Cmd+J` (macOS) or `Ctrl+J` (Windows/Linux).
+
+<Note>
+The Command Terminal is a full-featured shell session with your agent's working directory. Perfect for running builds, tests, or any command-line tool.
+</Note>
+
+### Keyboard-First Design
+
+Full keyboard control with customizable shortcuts designed for flow state.
+
+<Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+  Master Maestro's keyboard-first interface with customizable shortcuts and mastery tracking.
+</Card>
+
+**Essential Shortcuts:**
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| Quick Actions | `Cmd+K` | `Ctrl+K` |
+| New Agent | `Cmd+N` | `Ctrl+N` |
+| Switch AI/Terminal | `Cmd+J` | `Ctrl+J` |
+| Previous/Next Agent | `Cmd+[` / `Cmd+]` | `Ctrl+[` / `Ctrl+]` |
+| Toggle Left Panel | `Alt+Cmd+←` | `Alt+Ctrl+←` |
+| Toggle Right Panel | `Alt+Cmd+→` | `Alt+Ctrl+→` |
+| New Tab | `Cmd+T` | `Ctrl+T` |
+| Close Tab | `Cmd+W` | `Ctrl+W` |
+| Go to Files Tab | `Cmd+Shift+F` | `Ctrl+Shift+F` |
+| Go to History Tab | `Cmd+Shift+H` | `Ctrl+Shift+H` |
+| Go to Auto Run Tab | `Cmd+Shift+1` | `Ctrl+Shift+1` |
+| View Git Diff | `Cmd+Shift+D` | `Ctrl+Shift+D` |
+| View Git Log | `Cmd+Shift+G` | `Ctrl+Shift+G` |
+| Usage Dashboard | `Opt+Cmd+U` | `Alt+Ctrl+U` |
+| All Shortcuts | `Cmd+/` | `Ctrl+/` |
+
+**Jump to Agent (Alt+Cmd+1-0 / Alt+Ctrl+1-0):**
+Quickly jump to agents 1-10 using number keys. Agent 10 is accessed via `0`.
+
+### Session Discovery
+
+Automatically discovers and imports existing sessions from all supported providers.
+
+**Features:**
+- Import conversations from before Maestro was installed
+- Browse all sessions across all providers
+- Search by content, date, or agent
+- Star important sessions
+- Rename sessions for better organization
+- Resume any session in a new tab
+
+**Access Session Browser:**
+- Press `Cmd+Shift+L` (macOS) or `Ctrl+Shift+L` (Windows/Linux)
+- Or use Quick Actions → "View Agent Sessions"
+
+### Git Integration
+
+Automatic git repository detection with comprehensive git features.
+
+**Features:**
+- **Branch display** in agent header
+- **Git Diff Viewer** - `Cmd+Shift+D` / `Ctrl+Shift+D`
+  - Compare working directory to HEAD
+  - Syntax-highlighted diffs
+  - File-by-file navigation
+- **Git Log Viewer** - `Cmd+Shift+G` / `Ctrl+Shift+G`
+  - View commit history
+  - Search commits
+  - Inspect commit details
+- **Git Worktrees** - Parallel development on isolated branches
+- **Create PRs** - One-click PR creation (requires `gh` CLI)
+
+### File Explorer
+
+Browse project files with syntax highlighting, markdown preview, and image viewing.
+
+**Features:**
+- Syntax highlighting for all major languages
+- Markdown preview with live rendering
+- Image viewing (PNG, JPG, GIF, SVG)
+- CSV rendering as tables
+- File search and filtering (`Cmd+F` / `Ctrl+F`)
+- Reference files in prompts with `@` mentions
+
+**Access File Explorer:**
+Press `Cmd+Shift+F` / `Ctrl+Shift+F` to jump to the Files tab.
+
+### Document Graph
+
+Visual knowledge graph of your markdown documentation.
+
+<Card title="Document Graph" icon="diagram-project" href="/analytics/document-graph">
+  Automatically discovers internal `[[wiki-links]]` and `[markdown](links)`, visualizes document relationships with interactive nodes and edges.
+</Card>
+
+**Features:**
+- Force-directed and hierarchical layouts
+- Interactive node navigation
+- Search and filter documents
+- Keyboard navigation
+- Mini-map for large graphs
+- External link tracking
+
+**Access Document Graph:**
+From the File Explorer context menu or Quick Actions → "Document Graph".
+
+### Output Filtering
+
+Search and filter AI output with include/exclude modes, regex support, and per-response filters.
+
+**Features:**
+- **Include mode**: Show only matching lines
+- **Exclude mode**: Hide matching lines
+- **Regex support**: Use patterns like `log.*Error`
+- **Per-response filters**: Filter individual AI responses locally
+- **Persistent filters**: Saved per agent session
+
+**Access Output Filter:**
+Press `Cmd+F` / `Ctrl+F` when focused on the AI output area.
+
+### Slash Commands
+
+Extensible command system with autocomplete and template variables.
+
+<Card title="Slash Commands" icon="slash" href="/guides/slash-commands">
+  Create custom commands with template variables for your workflows. Includes bundled Spec-Kit and OpenSpec command sets.
+</Card>
+
+**Built-in Command Sets:**
+- **Spec-Kit** - Feature specifications and planning ([Spec-Kit Commands](/speckit-commands))
+- **OpenSpec** - Change proposals and architecture ([OpenSpec Commands](/openspec-commands))
+
+**Create Custom Commands:**
+Settings → AI Agents → Custom AI Commands
+
+Example command:
+```
+Command: /review
+Description: Review code for security issues
+Prompt: Review the following code for security vulnerabilities, focusing on {{SELECTION_OR_CLIPBOARD}}. Check for SQL injection, XSS, authentication issues, and crypto mistakes.
+```
+
+**Template Variables:**
+- `{{CLIPBOARD}}` - Current clipboard content
+- `{{SELECTION}}` - Selected text in file preview
+- `{{SELECTION_OR_CLIPBOARD}}` - Selection if available, otherwise clipboard
+- `{{PROJECT_PATH}}` - Current project directory
+- `{{GIT_BRANCH}}` - Current git branch
+
+### Draft Auto-Save
+
+Never lose work. Drafts are automatically saved and restored per session.
+
+**How it works:**
+- Input text is saved every few seconds
+- Restored when you reopen the tab
+- Persisted across app restarts
+- Cleared when you send the message
+
+### Automatic Tab Naming
+
+Tabs are automatically named based on your first message.
+
+**Features:**
+- AI-generated descriptive names
+- No more "New Session" clutter
+- Rename anytime with `Cmd+Shift+R` / `Ctrl+Shift+R`
+- Shows in tab bar and agent list
+
+### Custom Notifications
+
+Execute any command when agents complete tasks.
+
+**Use Cases:**
+- Audio alerts (play a sound)
+- Desktop notifications (via `notify-send` or similar)
+- Logging to file
+- Integration with notification services (Slack, Discord, etc.)
+
+**Configure in Settings:**
+Settings → General → Notifications
+
+Example:
+```bash
+# macOS - text-to-speech
+say "Agent {{AGENT_NAME}} completed task"
+
+# Linux - desktop notification
+notify-send "Maestro" "Agent {{AGENT_NAME}} completed task"
+
+# Windows - notification
+New-BurntToastNotification -Text "Agent {{AGENT_NAME}} completed task"
+```
+
+### Beautiful Themes
+
+17 built-in themes across dark, light, and vibe categories, plus a fully customizable theme builder.
+
+**Dark Themes:**
+- Dracula
+- Monokai Pro
+- Nord
+- Tokyo Night
+- Catppuccin Mocha
+- Gruvbox Dark
+
+**Light Themes:**
+- GitHub Light
+- Solarized Light
+- One Light
+- Gruvbox Light
+- Catppuccin Latte
+- Ayu Light
+
+**Vibe Themes:**
+- Pedurple (Maestro's signature theme)
+- Maestro's Choice
+- Dre Synth
+- InQuest
+
+**Custom Theme Builder:**
+Create your own theme with full control over colors, backgrounds, and accents. Export and share with others.
+
+### WakaTime Integration
+
+Automatic time tracking via WakaTime with optional per-file write activity tracking.
+
+<Card title="WakaTime Integration" icon="clock" href="/guides/configuration#wakatime-integration">
+  Track how much time you spend with AI agents, which files are modified, and overall productivity metrics.
+</Card>
+
+**Features:**
+- Automatic session time tracking
+- Per-file write tracking (when AI modifies files)
+- Integration with WakaTime dashboard
+- Custom project names and tags
+
+**Setup:**
+1. Install WakaTime CLI
+2. Enable in Settings → Integrations → WakaTime
+3. Configure API key
+4. Choose tracking options
+
+### Cost Tracking
+
+Real-time token usage and cost tracking per session and globally.
+
+**Features:**
+- Input/output token counts
+- Cache read and creation tokens (Claude)
+- Cost per session (USD)
+- Global cost aggregation
+- Cost per provider
+
+**Supported Providers:**
+- Claude Code (full cost tracking)
+- OpenCode (full cost tracking)
+- Codex (token tracking only)
+- Factory Droid (token tracking only)
+
+### Multi-Agent Management
+
+Run unlimited agents in parallel, each with isolated workspaces and conversation histories.
+
+**Features:**
+- Create agents for different projects
+- Group agents by category
+- Collapse/expand groups
+- Star important agents
+- Drag-and-drop to reorder
+- Color-coded status (green=ready, yellow=busy, red=error, orange=connecting)
+
+### Message Queueing
+
+Queue messages while AI is busy; they're sent automatically when the agent becomes ready.
+
+**How it works:**
+1. Type a message while AI is processing
+2. Message is queued automatically
+3. When AI finishes, queued messages are sent
+4. Never lose a thought while waiting
+
+## Analytics & Visualization
+
+### Usage Dashboard
+
+Comprehensive analytics for tracking AI usage patterns across all sessions.
+
+<Card title="Usage Dashboard" icon="chart-line" href="/analytics/usage-dashboard">
+  View aggregated statistics with multiple time ranges, compare agent performance, analyze user vs. Auto Run activity distribution, and explore activity heatmaps. Includes CSV export and real-time updates.
+</Card>
+
+**Access:**
+Press `Opt+Cmd+U` (macOS) or `Alt+Ctrl+U` (Windows/Linux)
+
+**Features:**
+- Time range selection (day, week, month, year, all time)
+- Token usage and cost trends
+- Agent performance comparison
+- User vs. Auto Run activity breakdown
+- Activity heatmaps
+- CSV export for external analysis
+- Colorblind-friendly palettes
+
+**Keyboard Navigation:**
+- Arrow keys to navigate view tabs
+- Tab/Shift+Tab to move between sections
+- Home/End to jump to first/last section
+- Escape to close
+
+### Director's Notes
+
+Bird's-eye view of all agent activity in a unified timeline.
+
+<Card title="Director's Notes" icon="notes" href="/analytics/usage-dashboard">
+  Aggregate history from every agent, search and filter entries, and generate AI-powered synopses of recent work.
+</Card>
+
+**Access:**
+Press `Cmd+Shift+O` / `Ctrl+Shift+O`
+
+**Features:**
+- Unified timeline of all agent activity
+- Search and filter by agent, content, or date
+- AI-generated synopses of work periods
+- Export to markdown
+- Colorblind-friendly themes
+
+<Note>
+Director's Notes is an **Encore Feature**. Enable it in Settings → Encore Features.
+</Note>
+
+## Global Environment Variables
+
+Configure environment variables once in Settings and they apply to all agent processes and terminal sessions.
+
+**Perfect for:**
+- API keys (e.g., `OPENAI_API_KEY`)
+- Proxy settings (e.g., `HTTP_PROXY`)
+- Tool paths (e.g., `PATH` additions)
+- Custom configuration variables
+
+**Configure:**
+Settings → Advanced → Global Environment Variables
+
+## Achievements
+
+Level up from Apprentice to Titan of the Baton based on cumulative Auto Run time.
+
+<Card title="Achievements" icon="trophy" href="/reference/achievements">
+  11 conductor-themed ranks to unlock. Share your progress with the community.
+</Card>
+
+**Ranks:**
+1. Apprentice of the Baton (0 hours)
+2. Novice Conductor (1 hour)
+3. Journeyman of the Beat (5 hours)
+4. Adept Orchestrator (10 hours)
+5. Maestro in Training (25 hours)
+6. Seasoned Maestro (50 hours)
+7. Master of the Symphony (100 hours)
+8. Virtuoso Conductor (250 hours)
+9. Grand Maestro (500 hours)
+10. Legend of the Podium (1000 hours)
+11. Titan of the Baton (2500 hours)
+
+**Share Achievements:**
+Generate a shareable image with your rank and stats.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Auto Run & Playbooks" icon="play" href="/power/auto-run-playbooks">
+    Deep dive into creating and running playbooks
+  </Card>
+  <Card title="Git Worktrees" icon="code-branch" href="/power/git-worktrees">
+    Learn to run agents in parallel on isolated branches
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Master all keyboard shortcuts
+  </Card>
+  <Card title="Configuration" icon="gear" href="/guides/configuration">
+    Customize Maestro to your workflow
+  </Card>
+</CardGroup>

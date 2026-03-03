@@ -1,0 +1,388 @@
+---
+title: "Mobile Remote Control"
+description: "Control Maestro from your phone with QR code pairing and mobile web interface"
+---
+
+## Overview
+
+Mobile Remote Control lets you interact with Maestro from your phone through a secure local network connection. Scan a QR code to pair, then send commands, monitor sessions, and view responses.
+
+<Info>
+  Access Maestro from your phone using a mobile-optimized web interface with offline queue support.
+</Info>
+
+## Setup
+
+<Steps>
+  <Step title="Enable Web Server">
+    In Maestro Settings → Remote Control:
+    
+    ```
+    ✓ Enable web server for remote control
+    Port: 3737 (default)
+    ```
+  </Step>
+  
+  <Step title="Show QR Code">
+    Click "Show QR Code" in the Remote Control settings
+  </Step>
+  
+  <Step title="Scan from Phone">
+    Open your phone's camera app and scan the QR code
+  </Step>
+  
+  <Step title="Connect">
+    Tap the notification to open in your mobile browser
+  </Step>
+</Steps>
+
+## Mobile Interface
+
+The mobile web interface is optimized for touch:
+
+### Session Pills
+
+Quick session switching at the top:
+
+```typescript
+interface SessionPillBarProps {
+  sessions: Session[]
+  activeSessionId: string | null
+  onSelectSession: (sessionId: string) => void
+}
+```
+
+- Horizontal scrolling pill bar
+- Color-coded by agent state (green/yellow/red)
+- Tap to switch between agents
+- "All Sessions" view for overview
+
+### Command Input
+
+Streamlined input with smart features:
+
+<CodeGroup>
+```typescript Basic Input
+interface CommandInputBarProps {
+  onSend: (message: string) => void
+  disabled?: boolean
+  placeholder?: string
+}
+```
+
+```typescript Advanced Features
+// Auto-resize text area
+// Slash command autocomplete  
+// Recent commands quick access
+// Voice input support (if available)
+// Offline queue indicator
+```
+</CodeGroup>
+
+### Response Viewer
+
+Mobile-optimized message display:
+
+- Collapsible code blocks
+- Tap to copy code snippets
+- Rendered markdown with syntax highlighting
+- Image support with lightbox
+- Loading states for active responses
+
+### Tab Bar Navigation
+
+| Tab | Description |
+|-----|-------------|
+| Chat | Main conversation view |
+| History | Command history |
+| Sessions | All agents overview |
+| Status | Connection and queue status |
+
+## Features
+
+### Offline Queue
+
+Send commands even when disconnected:
+
+```typescript
+// Commands queue locally
+interface OfflineQueueItem {
+  sessionId: string
+  message: string
+  timestamp: number
+  status: 'pending' | 'sending' | 'sent' | 'error'
+}
+```
+
+<Info>
+  Queued messages automatically send when connection is restored.
+</Info>
+
+### Pull to Refresh
+
+Swipe down to refresh session state:
+
+```typescript
+import { PullToRefresh } from '@/web/components/PullToRefresh'
+
+<PullToRefresh onRefresh={fetchLatestMessages} />
+```
+
+### Haptic Feedback
+
+Native haptics for key interactions:
+
+```typescript
+import { triggerHaptic, HAPTIC_PATTERNS } from '@/web/mobile/constants'
+
+// On message sent
+triggerHaptic(HAPTIC_PATTERNS.SUCCESS)
+
+// On error
+triggerHaptic(HAPTIC_PATTERNS.ERROR)
+
+// On selection
+triggerHaptic(HAPTIC_PATTERNS.SELECTION)
+```
+
+### Voice Input
+
+Speech-to-text for hands-free input:
+
+```typescript
+import { supportsVoiceInput } from '@/web/mobile/constants'
+
+if (supportsVoiceInput()) {
+  // Show microphone button
+  <VoiceInputButton onTranscript={handleVoiceInput} />
+}
+```
+
+## Connection Management
+
+### Status Indicator
+
+Visual connection state:
+
+<Tabs>
+  <Tab title="Connected">
+    🟢 Active connection to Maestro desktop
+  </Tab>
+  
+  <Tab title="Connecting">
+    🟡 Attempting to establish connection
+  </Tab>
+  
+  <Tab title="Offline">
+    🔴 No connection (queue enabled)
+  </Tab>
+</Tabs>
+
+### Auto-Reconnect
+
+Automatic reconnection on network changes:
+
+```typescript
+// WebSocket reconnection logic
+const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000]
+
+let reconnectAttempt = 0
+const reconnect = () => {
+  const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)]
+  setTimeout(() => connectWebSocket(), delay)
+  reconnectAttempt++
+}
+```
+
+### Session Sync
+
+Real-time state synchronization:
+
+```typescript
+// Desktop → Mobile updates
+- Session state changes (ready/busy/error)
+- New messages and responses
+- Agent output streaming
+- Cost tracking updates
+
+// Mobile → Desktop commands  
+- Send message
+- Switch session
+- Execute slash command
+```
+
+## Mobile Configuration
+
+### Viewport Detection
+
+```typescript
+import { isMobileViewport, MOBILE_BREAKPOINTS } from '@/web/mobile/constants'
+
+// Responsive breakpoints
+const MOBILE_BREAKPOINTS = {
+  small: 320,   // Minimum supported width
+  medium: 375,  // iPhone SE, iPhone 12/13/14 Mini
+  large: 414,   // iPhone 12/13/14 Pro Max
+  tablet: 768   // iPad
+}
+
+if (isMobileViewport()) {
+  // Use mobile-optimized UI
+}
+```
+
+### Safe Areas
+
+Respect device notches and home indicators:
+
+```css
+/* CSS environment variables */
+padding-top: env(safe-area-inset-top);
+padding-bottom: env(safe-area-inset-bottom);
+padding-left: env(safe-area-inset-left);  
+padding-right: env(safe-area-inset-right);
+```
+
+### Gesture Thresholds
+
+```typescript
+const GESTURE_THRESHOLDS = {
+  swipeVelocity: 0.5,      // Minimum velocity for swipe
+  swipeDistance: 50,       // Minimum distance in pixels
+  longPressDelay: 500,     // Milliseconds for long press
+  doubleTapDelay: 300      // Maximum delay between taps
+}
+```
+
+## Security
+
+### Local Network Only
+
+<Warning>
+  The web server only binds to localhost/LAN. It is not exposed to the internet.
+</Warning>
+
+```typescript
+// Server configuration
+const server = createServer({
+  host: '0.0.0.0',          // LAN access
+  port: 3737,
+  cors: {
+    origin: false          // No external origins
+  }
+})
+```
+
+### No Authentication Required
+
+Since the server is local-only:
+
+- No login/password needed
+- QR code includes session token
+- Connection limited to your network
+
+## Performance
+
+### Code Splitting
+
+Mobile app loads separately for faster initial load:
+
+```typescript
+// Lazy load mobile interface
+const Mobile = lazy(() => import('./mobile'))
+
+<Suspense fallback={<LoadingScreen />}>
+  {isMobile && <Mobile />}
+</Suspense>
+```
+
+### Optimized Rendering
+
+```typescript
+// Virtual scrolling for long message history
+import { VirtualScroller } from '@/web/components'
+
+<VirtualScroller
+  items={messages}
+  itemHeight={80}
+  renderItem={renderMessage}
+/>
+```
+
+### Asset Optimization
+
+- Compressed images via WebP
+- Minified JavaScript bundles
+- Gzipped responses
+- Service worker caching
+
+## Use Cases
+
+### Quick Commands
+
+```
+Scenario: Away from desk, need to run quick command
+
+1. Pull out phone
+2. Open bookmarked Maestro link
+3. Type command in input
+4. Send (queues if offline)
+5. View response when available
+```
+
+### Monitoring
+
+```
+Scenario: Check on long-running Auto Run
+
+1. Open Maestro mobile
+2. See active session indicator
+3. View streamed progress
+4. Get notification when complete
+```
+
+### On-the-Go
+
+```
+Scenario: Review agent responses during commute
+
+1. Read full conversation history
+2. Send follow-up questions
+3. Offline queue handles spotty connection
+4. Sync when back online
+```
+
+## Troubleshooting
+
+### Can't Connect
+
+<Steps>
+  <Step title="Check Web Server">
+    Verify "Enable web server" is checked in settings
+  </Step>
+  
+  <Step title="Same Network">
+    Ensure phone and computer are on same WiFi
+  </Step>
+  
+  <Step title="Firewall">
+    Check firewall allows port 3737
+  </Step>
+  
+  <Step title="Rescan QR">
+    Generate new QR code and scan again
+  </Step>
+</Steps>
+
+### Messages Not Sending
+
+1. Check connection indicator (should be green)
+2. Look for queued messages badge
+3. Try pull-to-refresh
+4. Check desktop Maestro is running
+
+## Related Features
+
+- [Message Queue](/power/message-queueing) - Understand offline queue
+- [Agent Management](/features/agents) - Configure agents
+- [Settings](/getting-started/settings) - Configure web server

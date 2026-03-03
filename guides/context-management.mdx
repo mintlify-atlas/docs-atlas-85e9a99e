@@ -1,0 +1,297 @@
+---
+title: Context Management
+description: Manage agent context, session storage, and context grooming for optimal AI performance
+---
+
+## Overview
+
+Effective context management is crucial for AI agent performance. Maestro provides tools to manage context size, transfer context between agents, and groom context for optimal efficiency.
+
+## Context Management Settings
+
+Configure context behavior in Settings > Context Management:
+
+```typescript
+interface ContextManagementSettings {
+  // Auto-grooming settings
+  autoGroomingEnabled: boolean;
+  autoGroomingThreshold: number;  // Token count threshold
+  
+  // Context transfer settings
+  enableContextTransfer: boolean;
+  transferFormat: 'full' | 'summary';
+  
+  // Session storage settings
+  maxStoredSessions: number;
+  sessionRetentionDays: number;
+}
+```
+
+## Session Storage
+
+<Info>
+Maestro automatically stores session messages for each agent type, enabling context persistence and transfer.
+</Info>
+
+### Supported Agents
+
+Each agent has its own session storage implementation:
+
+- **Claude Code** - Stores session in `.claude_code/sessions/`
+- **OpenCode** - Stores session data in agent-specific format
+- **Codex** - Maintains OpenAI conversation history
+- **Factory Droid** - Custom session storage
+
+### Session Data Structure
+
+<Tabs>
+  <Tab title="Message Format">
+    ```typescript
+    interface SessionMessage {
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+      timestamp: number;
+      metadata?: {
+        tokens?: number;
+        model?: string;
+        tool_use?: any[];
+      };
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Session Result">
+    ```typescript
+    interface SessionMessagesResult {
+      messages: SessionMessage[];
+      total: number;
+      sessionId: string;
+      agentId: string;
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Context Grooming
+
+<Warning>
+Context grooming spawns a temporary agent process to summarize conversation history. This reduces token usage while preserving key information.
+</Warning>
+
+### How It Works
+
+<Steps>
+  <Step title="Detect Large Context">
+    Maestro monitors context size and alerts when approaching token limits.
+  </Step>
+  
+  <Step title="Spawn Grooming Session">
+    A batch-mode agent process is created with read-only access to analyze the context.
+  </Step>
+  
+  <Step title="Generate Summary">
+    The agent generates a concise summary of the conversation, preserving:
+    - Key decisions and conclusions
+    - Important code changes
+    - Unresolved issues
+    - Action items
+  </Step>
+  
+  <Step title="Replace Context">
+    The original context is replaced with the summary, freeing up tokens for new conversation.
+  </Step>
+</Steps>
+
+### Grooming API
+
+```typescript
+// Single-call grooming (recommended)
+const result = await window.maestro.context.groomContext(
+  projectRoot: string,
+  agentType: string,
+  prompt: string,
+  options?: {
+    sshRemoteConfig?: SshRemoteConfig;
+    customPath?: string;
+    customArgs?: string;
+    customEnvVars?: Record<string, string>;
+  }
+);
+
+// Returns: string (groomed summary)
+```
+
+### Grooming Configuration
+
+<Accordion title="Timeout Settings">
+  **Default Timeouts:**
+  - Overall timeout: 5 minutes
+  - Idle timeout: 5 seconds (with min 100 char response)
+  - Connection timeout: 10 seconds
+  
+  Grooming operations automatically cancel if they exceed these limits.
+</Accordion>
+
+<Accordion title="SSH Remote Support">
+  Context grooming fully supports SSH remote execution:
+  
+  ```typescript
+  const result = await window.maestro.context.groomContext(
+    '/path/to/project',
+    'claude-code',
+    'Summarize this conversation focusing on key decisions',
+    {
+      sshRemoteConfig: {
+        enabled: true,
+        remoteId: 'my-server',
+        workingDirOverride: '/remote/path'
+      }
+    }
+  );
+  ```
+</Accordion>
+
+<Accordion title="Batch Mode Processing">
+  Grooming uses batch mode (non-interactive) agent execution:
+  - No PTY allocation
+  - Direct stdin/stdout communication
+  - Uses `--print --output-format stream-json` for Claude Code
+  - Collects response until process exits or idle timeout
+</Accordion>
+
+## Context Transfer
+
+<Info>
+Transfer context from one agent to another to continue work with a different AI model.
+</Info>
+
+### Transfer Workflow
+
+<Steps>
+  <Step title="Select Source Session">
+    In the source agent, choose the session/tab to transfer.
+  </Step>
+  
+  <Step title="Initiate Transfer">
+    Use the context menu or keyboard shortcut to start the transfer.
+  </Step>
+  
+  <Step title="Choose Destination">
+    Select the target agent and optionally groom the context before transfer.
+  </Step>
+  
+  <Step title="Verify Transfer">
+    The context appears in the destination agent with a summary header.
+  </Step>
+</Steps>
+
+### Retrieving Stored Sessions
+
+```typescript
+// Get session context from storage
+const session = await window.maestro.context.getStoredSession(
+  agentId: string,
+  projectRoot: string,
+  sessionId: string
+);
+
+if (session) {
+  console.log(`Retrieved ${session.messages.length} messages`);
+  console.log(`Total: ${session.total}`);
+}
+```
+
+## Context Optimization Tips
+
+<Tip>
+Follow these best practices to maintain optimal context size:
+</Tip>
+
+### 1. Use Read-Only Mode for Analysis
+
+Enable read-only mode (`Cmd+R`) when asking the agent to review or analyze:
+
+```bash
+# Good: Read-only analysis
+"Review this codebase architecture" (in read-only mode)
+
+# Avoid: Analysis in edit mode
+"Review this codebase architecture" (in edit mode)
+```
+
+### 2. Leverage Session History
+
+Use the `/history` command to create checkpoints:
+
+```bash
+/history
+```
+
+This generates a summary and adds it to the History tab, allowing you to start fresh while preserving the context.
+
+### 3. Start New Tabs for New Topics
+
+Don't cram unrelated tasks into a single conversation:
+
+- **New Tab** (`Cmd+T`) for each distinct task
+- **Star Important Tabs** (`Cmd+Shift+S`) to keep them accessible
+- **Close Completed Tabs** (`Cmd+W`) to reduce clutter
+
+### 4. Groom Before Major Changes
+
+Before starting a large refactoring or feature:
+
+1. Groom the current context to summarize decisions
+2. Start a new tab for the new work
+3. Reference the summary if needed
+
+## Advanced Context Patterns
+
+### Group Chat Context
+
+<Note>
+Group Chat manages context across multiple agents simultaneously, with automatic context grooming between rounds.
+</Note>
+
+When using Group Chat:
+- Each agent receives context from previous agents
+- Context is automatically groomed after each round
+- Summary preserves key insights from all agents
+
+### Auto Run Context
+
+Auto Run documents maintain their own context:
+- Phase context is isolated to each phase
+- Task context builds on phase context
+- Document-level context available to all phases
+
+## Monitoring Context Usage
+
+<Warning>
+Watch for these signs that context needs grooming:
+</Warning>
+
+- Agent responses becoming slower
+- "Context limit" warnings in output
+- Degraded response quality
+- Agent forgetting earlier conversation details
+
+## Context Cancellation
+
+Cancel ongoing grooming operations:
+
+```typescript
+// Cancel all active grooming sessions
+await window.maestro.context.cancelGrooming();
+```
+
+Useful when:
+- Grooming takes too long
+- You need to modify the grooming prompt
+- You want to transfer context without grooming
+
+## Next Steps
+
+- Explore [Slash Commands](/guides/slash-commands) for context-aware automation
+- Learn about [SSH Remote Execution](/guides/ssh-remote-execution) for remote context grooming
+- Review [Configuration](/guides/configuration) for context management settings

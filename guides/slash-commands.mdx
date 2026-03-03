@@ -1,0 +1,378 @@
+---
+title: Slash Commands
+description: Use built-in and custom slash commands to automate common tasks and extend agent capabilities
+---
+
+## Overview
+
+Slash commands provide quick access to common operations and custom workflows. Maestro supports built-in commands, Spec-Kit commands, OpenSpec commands, and custom AI commands.
+
+## Built-In Maestro Commands
+
+<Info>
+Built-in commands are intercepted by Maestro before being sent to the agent.
+</Info>
+
+### Available Commands
+
+```typescript
+const slashCommands = [
+  {
+    command: '/history',
+    description: 'Generate a synopsis of recent work and add to history',
+    aiOnly: true
+  },
+  {
+    command: '/wizard',
+    description: 'Start the planning wizard for Auto Run documents',
+    aiOnly: true
+  },
+  {
+    command: '/skills',
+    description: 'List available Claude Code skills for this project',
+    aiOnly: true,
+    agentTypes: ['claude-code']
+  }
+];
+```
+
+### Usage
+
+<Tabs>
+  <Tab title="/history">
+    **Generate Work Summary**
+    
+    The `/history` command creates a synopsis of recent conversation and saves it to the History tab:
+    
+    ```bash
+    /history
+    ```
+    
+    This will:
+    - Analyze recent messages in the current tab
+    - Generate a concise summary of work completed
+    - Add entry to History tab with timestamp
+    - Free up context for continued work
+    
+    <Tip>
+    Use `/history` at natural breakpoints (completed features, end of day) to maintain searchable work logs.
+    </Tip>
+  </Tab>
+  
+  <Tab title="/wizard">
+    **Start Planning Wizard**
+    
+    Launch the Auto Run planning wizard to create structured execution documents:
+    
+    ```bash
+    /wizard
+    ```
+    
+    The wizard will:
+    - Guide you through project planning
+    - Generate phases and tasks
+    - Create an Auto Run document
+    - Optionally start execution
+    
+    Alternative: Press `Cmd+Shift+N` to open the wizard.
+  </Tab>
+  
+  <Tab title="/skills">
+    **List Claude Code Skills**
+    
+    Display available skills for the current project (Claude Code only):
+    
+    ```bash
+    /skills
+    ```
+    
+    Shows:
+    - Available skills in the project
+    - Skill descriptions
+    - How to invoke each skill
+    
+    <Note>
+    This command is only available when using Claude Code agents.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Spec-Kit Commands
+
+<Info>
+Spec-Kit provides curated slash commands for software specification and planning tasks.
+</Info>
+
+### Command Structure
+
+```typescript
+interface CommandDefinition {
+  id: string;              // Unique identifier
+  command: string;         // Slash command (e.g., '/spec')
+  description: string;     // Brief description
+  prompt: string;          // Full AI prompt template
+  isCustom: boolean;       // User-created command
+  isModified: boolean;     // Modified from default
+}
+```
+
+### Using Spec-Kit Commands
+
+<Steps>
+  <Step title="View Available Commands">
+    Open Settings > Slash Commands to see all Spec-Kit commands.
+  </Step>
+  
+  <Step title="Use in Conversation">
+    Type the slash command in any AI conversation:
+    ```bash
+    /spec
+    ```
+  </Step>
+  
+  <Step title="Customize Prompts">
+    Edit command prompts in Settings to match your workflow.
+  </Step>
+</Steps>
+
+### Spec-Kit API
+
+```typescript
+// Get all Spec-Kit commands
+const result = await window.maestro.speckit.getPrompts();
+if (result.success) {
+  console.log(result.commands);
+}
+
+// Get specific command
+const cmd = await window.maestro.speckit.getCommand('/spec');
+if (cmd.success && cmd.command) {
+  console.log(cmd.command.prompt);
+}
+
+// Save custom prompt
+await window.maestro.speckit.savePrompt('spec-id', 'New prompt template');
+
+// Reset to default
+await window.maestro.speckit.resetPrompt('spec-id');
+
+// Get metadata (version, last refresh)
+const meta = await window.maestro.speckit.getMetadata();
+```
+
+### Command Metadata
+
+```typescript
+interface CommandMetadata {
+  lastRefreshed: string;   // ISO timestamp
+  commitSha: string;       // Git commit SHA
+  sourceVersion: string;   // Version string
+  sourceUrl: string;       // Repository URL
+}
+```
+
+## OpenSpec Commands
+
+<Info>
+OpenSpec provides open-source specification commands, similar to Spec-Kit but with community-driven prompts.
+</Info>
+
+### OpenSpec API
+
+Identical to Spec-Kit API, but uses the `openspec` namespace:
+
+```typescript
+// Get all OpenSpec commands
+const result = await window.maestro.openspec.getPrompts();
+
+// Get specific command
+const cmd = await window.maestro.openspec.getCommand('/architecture');
+
+// Save custom prompt
+await window.maestro.openspec.savePrompt('arch-id', 'Custom template');
+
+// Reset to default
+await window.maestro.openspec.resetPrompt('arch-id');
+
+// Get metadata
+const meta = await window.maestro.openspec.getMetadata();
+```
+
+## Custom AI Commands
+
+<Warning>
+Custom AI commands allow you to create reusable prompt templates with variable substitution.
+</Warning>
+
+### Creating Custom Commands
+
+<Steps>
+  <Step title="Open Settings">
+    Press `Cmd+,` and navigate to "Slash Commands" section.
+  </Step>
+  
+  <Step title="Add New Command">
+    Click "Add Custom Command" and configure:
+    - **Command**: Slash command name (e.g., `/review`)
+    - **Description**: Brief description for autocomplete
+    - **Prompt**: Full prompt template with variables
+  </Step>
+  
+  <Step title="Use Variables">
+    Include template variables in your prompt:
+    ```
+    Review the code in {{selection}} and provide feedback
+    ```
+  </Step>
+  
+  <Step title="Save and Use">
+    Save the command and use it in any conversation:
+    ```bash
+    /review
+    ```
+  </Step>
+</Steps>
+
+### Custom Command Structure
+
+```typescript
+interface CustomAICommand {
+  id: string;              // Auto-generated UUID
+  command: string;         // Slash command (with leading /)
+  description: string;     // Shown in autocomplete
+  prompt: string;          // AI prompt template
+  createdAt: number;       // Unix timestamp
+  updatedAt: number;       // Unix timestamp
+}
+```
+
+### Managing Custom Commands
+
+```typescript
+// Access via settings
+const { customAICommands, setCustomAICommands } = useSettings();
+
+// Add new command
+const newCommand: CustomAICommand = {
+  id: generateId(),
+  command: '/review',
+  description: 'Code review with best practices',
+  prompt: 'Review this code for:\n- Security issues\n- Performance\n- Best practices',
+  createdAt: Date.now(),
+  updatedAt: Date.now()
+};
+
+setCustomAICommands([...customAICommands, newCommand]);
+```
+
+## Command Autocomplete
+
+<Tip>
+All slash commands support autocomplete. Start typing `/` in the input to see available commands.
+</Tip>
+
+### Autocomplete Features
+
+- **Fuzzy Search** - Type partial matches
+- **Descriptions** - See command purpose before using
+- **Context-Aware** - Only shows commands valid for current agent
+- **Mode Filtering** - AI-only vs Terminal-only commands
+
+### Agent-Specific Commands
+
+Some commands are only available for specific agents:
+
+```typescript
+interface SlashCommand {
+  command: string;
+  description: string;
+  terminalOnly?: boolean;    // Only in terminal mode
+  aiOnly?: boolean;          // Only in AI mode
+  agentTypes?: ToolType[];   // Specific agents only
+}
+```
+
+Example:
+```typescript
+{
+  command: '/skills',
+  description: 'List available Claude Code skills',
+  aiOnly: true,
+  agentTypes: ['claude-code']  // Only for Claude Code
+}
+```
+
+## Command Best Practices
+
+<Accordion title="Keep Prompts Focused">
+  Each custom command should have a single, clear purpose:
+  
+  **Good:**
+  - `/review-security` - Security-focused code review
+  - `/review-performance` - Performance optimization review
+  - `/review-style` - Code style and conventions
+  
+  **Avoid:**
+  - `/review-everything` - Does too much, loses focus
+</Accordion>
+
+<Accordion title="Use Descriptive Names">
+  Command names should be self-documenting:
+  
+  **Good:**
+  - `/generate-tests`
+  - `/explain-architecture`
+  - `/refactor-extract`
+  
+  **Avoid:**
+  - `/gt` (unclear abbreviation)
+  - `/do-stuff` (too generic)
+  - `/command1` (non-descriptive)
+</Accordion>
+
+<Accordion title="Document Complex Prompts">
+  For commands with complex prompts, include:
+  - What the command does
+  - Expected input format
+  - Example usage
+  - Any prerequisites
+  
+  Store documentation in the command description or maintain a separate reference.
+</Accordion>
+
+<Accordion title="Version Control Your Commands">
+  Export custom commands and store in version control:
+  
+  1. Export settings from Settings > Advanced
+  2. Extract customAICommands from JSON
+  3. Store in repository (e.g., `.maestro/commands.json`)
+  4. Share with team
+</Accordion>
+
+## Refreshing Command Libraries
+
+<Note>
+Spec-Kit and OpenSpec commands are automatically updated when you refresh the command library.
+</Note>
+
+### Manual Refresh
+
+```typescript
+// Refresh Spec-Kit
+const result = await window.maestro.speckit.refresh();
+if (result.success) {
+  console.log('Updated to:', result.metadata.sourceVersion);
+}
+
+// Refresh OpenSpec
+const result = await window.maestro.openspec.refresh();
+if (result.success) {
+  console.log('Updated to:', result.metadata.sourceVersion);
+}
+```
+
+## Next Steps
+
+- Learn about [Context Management](/guides/context-management) to optimize command effectiveness
+- Explore [Configuration](/guides/configuration) to customize command behavior
+- Review [General Usage](/guides/general-usage) for keyboard shortcuts to commands

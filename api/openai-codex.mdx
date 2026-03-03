@@ -1,0 +1,430 @@
+---
+title: "OpenAI Codex Integration"
+description: "OpenAI's Codex CLI integration with support for GPT-5, O-series models"
+icon: "code"
+---
+
+OpenAI Codex is OpenAI's advanced coding assistant, supporting GPT-5, GPT-4, and O-series reasoning models with Maestro.
+
+## Overview
+
+Codex (`codex`) provides intelligent code generation with support for the latest OpenAI models including GPT-5.1, GPT-5.2, O3, and O4-mini.
+
+<Info>
+Codex supports session resume, read-only sandbox mode, image input, and provides detailed usage statistics with reasoning tokens.
+</Info>
+
+## Installation
+
+<Steps>
+  <Step title="Install Codex CLI">
+    Install via your preferred method:
+    
+    <CodeGroup>
+    ```bash npm
+    npm install -g codex
+    ```
+    
+    ```bash Homebrew (macOS)
+    brew install openai/tap/codex
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Configure API Key">
+    Set your OpenAI API key:
+    
+    ```bash
+    export OPENAI_API_KEY=sk-...
+    ```
+    
+    Or configure in `~/.codex/config.toml`:
+    
+    ```toml
+    [auth]
+    api_key = "sk-..."
+    ```
+  </Step>
+  
+  <Step title="Verify Installation">
+    Test the installation:
+    
+    ```bash
+    codex --version
+    ```
+  </Step>
+</Steps>
+
+## Capabilities
+
+Codex provides comprehensive AI coding features:
+
+<ParamField path="supportsResume" type="boolean" default="true">
+  Resume sessions with `exec resume <id>`
+</ParamField>
+
+<ParamField path="supportsReadOnlyMode" type="boolean" default="true">
+  Sandbox read-only mode with `--sandbox read-only`
+</ParamField>
+
+<ParamField path="supportsJsonOutput" type="boolean" default="true">
+  Structured JSONL output with `--json` flag
+</ParamField>
+
+<ParamField path="supportsSessionId" type="boolean" default="true">
+  Thread IDs in `thread.started` events
+</ParamField>
+
+<ParamField path="supportsImageInput" type="boolean" default="true">
+  Attach images with `-i, --image` flag
+</ParamField>
+
+<ParamField path="supportsImageInputOnResume" type="boolean" default="true">
+  Images embedded in prompt text on resume (no -i flag support)
+</ParamField>
+
+<ParamField path="supportsSessionStorage" type="boolean" default="true">
+  Sessions stored in `~/.codex/sessions/YYYY/MM/DD/*.jsonl`
+</ParamField>
+
+<ParamField path="supportsUsageStats" type="boolean" default="true">
+  Token usage in `turn.completed` events
+</ParamField>
+
+<ParamField path="supportsModelSelection" type="boolean" default="true">
+  Select models with `-m, --model` flag
+</ParamField>
+
+<ParamField path="supportsThinkingDisplay" type="boolean" default="true">
+  Reasoning tokens for O3/O4-mini models
+</ParamField>
+
+<ParamField path="supportsContextMerge" type="boolean" default="true">
+  Receive merged context via prompts
+</ParamField>
+
+<ParamField path="supportsContextExport" type="boolean" default="true">
+  Export session context for transfer
+</ParamField>
+
+<Warning>
+Codex does NOT support cost tracking - only token counts. Pricing varies by model.
+</Warning>
+
+Source: `src/main/agents/capabilities.ts:176`
+
+## Command-Line Arguments
+
+Maestro uses the `exec` subcommand for batch operations:
+
+```bash
+codex exec --json --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check [options] -- "prompt"
+```
+
+<ParamField path="exec" type="subcommand">
+  Batch execution mode (required for Maestro)
+</ParamField>
+
+<ParamField path="--json" type="flag">
+  Enable JSON output for parsing
+</ParamField>
+
+<ParamField path="--dangerously-bypass-approvals-and-sandbox" type="flag">
+  Auto-approve all operations (required by Maestro)
+</ParamField>
+
+<ParamField path="--skip-git-repo-check" type="flag">
+  Allow execution outside git repositories
+</ParamField>
+
+### Resume Mode
+
+Resume an existing session:
+
+```bash
+codex exec --json [options] resume {threadId} -- "prompt"
+```
+
+<ParamField path="resume" type="subcommand">
+  Thread ID to resume
+</ParamField>
+
+<Note>
+Codex resume requires a prompt - you cannot resume without sending a message.
+</Note>
+
+### Read-Only Mode
+
+For analysis without file modifications:
+
+```bash
+codex exec --json --sandbox read-only [options] -- "prompt"
+```
+
+<ParamField path="--sandbox" type="string" default="read-only">
+  Sandbox mode restricting file write access
+</ParamField>
+
+### Model Selection
+
+Specify a model:
+
+```bash
+codex exec --json -m gpt-5.3-codex [options] -- "prompt"
+```
+
+<ParamField path="-m, --model" type="string">
+  Model ID (e.g., `gpt-5.3-codex`, `o3`, `o4-mini`)
+</ParamField>
+
+### Working Directory
+
+Set working directory:
+
+```bash
+codex exec --json -C /path/to/project [options] -- "prompt"
+```
+
+<ParamField path="-C" type="string">
+  Working directory for execution
+</ParamField>
+
+### Image Input
+
+Attach an image:
+
+```bash
+codex exec --json -i /path/to/screenshot.png [options] -- "prompt"
+```
+
+<ParamField path="-i, --image" type="string">
+  Path to image file
+</ParamField>
+
+<Warning>
+The `-i` flag is NOT supported with `resume`. Images are saved to temp files and paths embedded in prompt text.
+</Warning>
+
+Source: `src/main/agents/definitions.ts:140`
+
+## Configuration
+
+Configure Codex in Maestro's agent settings:
+
+### Model Override
+
+Specify a default model:
+
+<ParamField path="model" type="string" default="">
+  Model ID (empty = use config.toml default)
+  
+  Examples: `gpt-5.3-codex`, `o3`, `gpt-4o`
+</ParamField>
+
+### Context Window
+
+Set context window for UI display:
+
+<ParamField path="contextWindow" type="number" default="400000">
+  Token limit for the selected model
+  
+  - GPT-5.2/5.3: 400,000 tokens
+  - GPT-4o: 128,000 tokens
+</ParamField>
+
+Source: `src/main/agents/definitions.ts:162`
+
+## Session Storage
+
+Codex stores sessions in date-organized JSONL files:
+
+```
+~/.codex/sessions/YYYY/MM/DD/{thread-id}.jsonl
+```
+
+Each line is a JSON event representing conversation turns, tool uses, and results.
+
+Maestro can import and resume existing Codex sessions.
+
+Source: `src/main/storage/codex-session-storage.ts`
+
+## Output Format
+
+Codex outputs newline-delimited JSON events:
+
+<CodeGroup>
+```json Thread Started
+{
+  "type": "thread.started",
+  "thread_id": "thread_abc123",
+  "timestamp": "2024-03-01T12:00:00Z"
+}
+```
+
+```json Agent Message
+{
+  "type": "agent_message",
+  "text": "I'll help you create that function...",
+  "timestamp": "2024-03-01T12:00:01Z"
+}
+```
+
+```json Tool Use
+{
+  "type": "tool_use",
+  "tool": "write_file",
+  "arguments": {
+    "path": "example.js",
+    "content": "console.log('Hello');"
+  }
+}
+```
+
+```json Turn Completed
+{
+  "type": "turn.completed",
+  "usage": {
+    "input_tokens": 1500,
+    "output_tokens": 800,
+    "reasoning_tokens": 5000
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+Reasoning tokens are only present for O3/O4-mini models.
+</Note>
+
+Source: `src/main/parsers/codex-parser.ts`
+
+## Supported Models
+
+Codex supports a wide range of OpenAI models:
+
+<AccordionGroup>
+  <Accordion title="GPT-5 Series">
+    - `gpt-5.1` - Latest GPT-5 model
+    - `gpt-5.1-codex` - Optimized for coding
+    - `gpt-5.1-codex-max` - Extended context
+    - `gpt-5.2` - Improved reasoning
+    - `gpt-5.3-codex` - Latest coding variant
+  </Accordion>
+  
+  <Accordion title="O-Series (Reasoning)">
+    - `o3` - Advanced reasoning model
+    - `o4-mini` - Lightweight reasoning
+  </Accordion>
+  
+  <Accordion title="GPT-4 Series">
+    - `gpt-4o` - GPT-4 Omni
+    - `gpt-4-turbo` - Fast GPT-4 variant
+  </Accordion>
+</AccordionGroup>
+
+## Error Patterns
+
+Common errors Maestro detects:
+
+<ResponseField name="API_KEY_INVALID" type="error">
+  **Pattern**: `invalid API key`
+  
+  **Solution**: Set valid OPENAI_API_KEY
+</ResponseField>
+
+<ResponseField name="RATE_LIMIT" type="error">
+  **Pattern**: `rate limit exceeded`
+  
+  **Solution**: Wait or upgrade API tier
+</ResponseField>
+
+<ResponseField name="CONTEXT_LENGTH" type="error">
+  **Pattern**: `maximum context length`
+  
+  **Solution**: Start new session or use model with larger context
+</ResponseField>
+
+<ResponseField name="INSUFFICIENT_QUOTA" type="error">
+  **Pattern**: `insufficient quota`
+  
+  **Solution**: Add credits to OpenAI account
+</ResponseField>
+
+Source: `src/main/parsers/error-patterns.ts`
+
+## Usage with Maestro Features
+
+<CardGroup cols={2}>
+  <Card title="Auto Run" icon="play">
+    Full support for playbooks and automated workflows
+  </Card>
+  
+  <Card title="Group Chat" icon="users">
+    Multi-agent collaboration with other providers
+  </Card>
+  
+  <Card title="Context Grooming" icon="scissors">
+    Export and merge conversation context
+  </Card>
+  
+  <Card title="Session Discovery" icon="folder-tree">
+    Import sessions from `~/.codex/sessions/`
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Steps>
+  <Step title="Choose the Right Model">
+    - Use `gpt-5.3-codex` for coding tasks
+    - Use `o3` or `o4-mini` for complex reasoning
+    - Use `gpt-4o` for general tasks
+  </Step>
+  
+  <Step title="Set Context Window">
+    Configure the correct context window in agent settings to track usage accurately
+  </Step>
+  
+  <Step title="Monitor Token Usage">
+    O-series models use reasoning tokens - monitor costs carefully
+  </Step>
+  
+  <Step title="Use Read-Only Mode">
+    Enable sandbox read-only for analysis tasks to prevent accidental modifications
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Codex not detected">
+    Verify installation:
+    ```bash
+    which codex
+    codex --version
+    ```
+  </Accordion>
+  
+  <Accordion title="API key not found">
+    Set environment variable:
+    ```bash
+    export OPENAI_API_KEY=sk-...
+    ```
+    
+    Or configure in `~/.codex/config.toml`
+  </Accordion>
+  
+  <Accordion title="Resume fails">
+    Ensure you're providing a prompt:
+    ```bash
+    codex exec resume thread_abc123 -- "Continue the task"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+- [Codex CLI Documentation](https://github.com/openai/codex)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Agent Management](/core/agent-management)
+- [Auto Run Playbooks](/power/auto-run-playbooks)

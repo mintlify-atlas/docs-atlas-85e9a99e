@@ -1,0 +1,203 @@
+---
+title: General Usage
+description: Learn the core workflows and usage patterns for managing AI agents in Maestro
+---
+
+## Overview
+
+Maestro is a keyboard-first desktop application for managing multiple AI coding assistants simultaneously. This guide covers the essential workflows and usage patterns.
+
+## Application Layout
+
+<Info>
+Maestro's interface is divided into three main areas: Left Bar (agents), Main Window (workspace), and Right Bar (context).
+</Info>
+
+### UI Components
+
+- **Left Bar** - Agent list with groups and navigation
+- **Main Window** - AI Terminal or Command Terminal workspace
+- **Right Bar** - Files, History, and Auto Run tabs
+- **System Log Viewer** - Special view for system logs
+
+## Core Workflows
+
+### Creating Agents
+
+<Steps>
+  <Step title="Open New Agent Modal">
+    Press `Cmd+N` (macOS) or `Ctrl+N` (Windows/Linux) to open the new agent modal.
+  </Step>
+  
+  <Step title="Select Agent Type">
+    Choose from supported agents:
+    - **Claude Code** - Anthropic's coding assistant
+    - **OpenCode** - Open-source coding agent
+    - **Codex** - OpenAI's code assistant
+    - **Factory Droid** - Specialized agent
+  </Step>
+  
+  <Step title="Configure Settings">
+    Set the workspace directory and optional custom configuration:
+    - Custom binary path
+    - Custom arguments
+    - Environment variables
+  </Step>
+</Steps>
+
+### Agent Modes
+
+Each agent operates in one of two modes:
+
+<Tabs>
+  <Tab title="AI Mode">
+    **AI Terminal** - Interact directly with the AI agent
+    
+    - Multi-tab support for conversation organization
+    - Read-only mode to prevent modifications
+    - YOLO mode for unconfirmed operations
+    - Session history and context management
+    - Automatic tab naming based on conversation
+  </Tab>
+  
+  <Tab title="Shell Mode">
+    **Command Terminal** - Traditional shell/terminal interface
+    
+    - Full shell access in the agent's workspace
+    - Custom shell configuration (bash, zsh, fish, etc.)
+    - Shell arguments and environment variables
+    - Terminal width customization
+  </Tab>
+</Tabs>
+
+**Switch modes:** Press `Cmd+J` to toggle between AI and Shell mode.
+
+### Working with Tabs
+
+<Info>
+Tabs are only available in AI mode and help organize different conversation threads.
+</Info>
+
+**Common tab operations:**
+
+```bash
+Cmd+T          # New tab
+Cmd+W          # Close current tab
+Cmd+Shift+[    # Previous tab
+Cmd+Shift+]    # Next tab
+Cmd+Shift+T    # Reopen closed tab
+Cmd+Shift+R    # Rename tab
+Cmd+Shift+S    # Star/bookmark tab
+```
+
+### Navigation
+
+**Agent Navigation:**
+```bash
+Cmd+[          # Previous agent
+Cmd+]          # Next agent
+Alt+Cmd+1-0    # Jump to agent 1-10
+Cmd+Shift+A    # Focus left panel
+```
+
+**History Navigation:**
+```bash
+Cmd+Shift+,    # Navigate back
+Cmd+Shift+.    # Navigate forward
+```
+
+### Panel Management
+
+**Toggle panels:**
+```bash
+Alt+Cmd+←      # Toggle left panel
+Alt+Cmd+→      # Toggle right panel
+Cmd+Shift+F    # Go to Files tab
+Cmd+Shift+H    # Go to History tab
+Cmd+Shift+1    # Go to Auto Run tab
+```
+
+## Agent States
+
+Agents are color-coded by their current state:
+
+- 🟢 **Green** - Ready/idle, waiting for input
+- 🟡 **Yellow** - Agent thinking/busy, processing request
+- 🔴 **Red** - No connection/error state
+- 🟠 **Pulsing Orange** - Connecting to agent
+
+## Keyboard-First Design
+
+<Tip>
+Maestro is optimized for keyboard navigation. Press `Cmd+/` to view all available shortcuts.
+</Tip>
+
+### Essential Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+K` | Quick Actions menu |
+| `Cmd+/` | Show all shortcuts |
+| `Cmd+,` | Open Settings |
+| `Alt+Cmd+,` | Open Agent Settings |
+| `Cmd+.` | Toggle Input/Output focus |
+| `Cmd+Shift+J` | Jump to bottom |
+
+## Quick Actions
+
+Press `Cmd+K` to open the Quick Actions menu for common operations:
+
+- Create new agent
+- Switch between agents
+- Open settings
+- Toggle panels
+- Navigate to tabs
+- View system information
+
+## Best Practices
+
+<Accordion title="Organize with Groups">
+  Create agent groups to organize related projects:
+  - Press `Cmd+Shift+M` to move agent to group
+  - Collapse/expand groups in the left panel
+  - Groups persist across sessions
+</Accordion>
+
+<Accordion title="Use Read-Only Mode">
+  Enable read-only mode (`Cmd+R`) when you want the agent to analyze without making changes:
+  - Safe code review
+  - Architecture discussions
+  - Documentation generation
+</Accordion>
+
+<Accordion title="Leverage History">
+  Use the `/history` slash command to generate work summaries:
+  - Automatic synopsis generation
+  - Searchable history entries
+  - Context for future sessions
+</Accordion>
+
+<Accordion title="Star Important Tabs">
+  Press `Cmd+Shift+S` to star tabs you want to keep:
+  - Prevents accidental closure
+  - Quick visual reference
+  - Organizes important conversations
+</Accordion>
+
+## Settings Persistence
+
+<Note>
+All settings are automatically persisted to disk. Changes to preferences, shortcuts, themes, and agent configurations are saved immediately.
+</Note>
+
+Settings are stored in platform-specific locations:
+- **macOS**: `~/Library/Application Support/maestro/`
+- **Linux**: `~/.config/maestro/`
+- **Windows**: `%APPDATA%\maestro\`
+
+## Next Steps
+
+- Learn about [Context Management](/guides/context-management) for efficient agent workflows
+- Explore [Slash Commands](/guides/slash-commands) for powerful automation
+- Configure [SSH Remote Execution](/guides/ssh-remote-execution) to run agents on remote servers
+- Customize your experience with [Themes](/guides/themes) and [Configuration](/guides/configuration)

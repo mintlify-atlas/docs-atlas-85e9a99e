@@ -1,0 +1,316 @@
+---
+title: Changelog
+description: Version history and release notes for Maestro
+icon: clock-rotate-left
+---
+
+# Changelog
+
+This page documents the version history of Maestro, including new features, improvements, and bug fixes for each release.
+
+<Tip>
+Maestro can update itself automatically! This feature was introduced in **v0.8.7** (December 16, 2025). Enable auto-updates in Settings to stay current.
+</Tip>
+
+## Latest Release
+
+### v0.15.1 - Maestro Symphony
+
+**Released**: March 3, 2026
+
+#### Major Features
+
+**🎶 Maestro Symphony** - Contribute to open source with AI assistance! Browse curated issues from projects with the `runmaestro.ai` label, clone repos with one click, and automatically process the relevant Auto Run playbooks. Track your contributions, streaks, and stats. You're contributing CPU and tokens towards your favorite open source projects and features.
+
+**🎬 Director's Notes** - Aggregates history across all agents into a unified timeline with search, filters, and an activity graph. Includes an AI Overview tab that generates a structured synopsis of recent work. Off by default, gated behind a new "Encore Features" panel under settings. This is a precursor to an eventual plugin system.
+
+**🏷️ Conductor Profile** - Available under Settings → General. Provide a short description on how Maestro agents should interface with you.
+
+**🧠 Three-State Thinking Toggle** - The thinking toggle now cycles through three modes: off, on, and sticky. Sticky mode keeps thinking content visible after the response completes. Cycle with `Cmd/Ctrl+Shift+K`.
+
+**🤖 Factory.ai Droid Support** - Added support for the Factory.ai droid agent with full session management and output parsing.
+
+**🔧 Windows and SSH Stability** - Major fixes for remote agent execution including wizard support, synopsis generation, and proper shell profile sourcing across platforms.
+
+#### Security Fixes
+
+Thanks to @VVX7 for reporting:
+- History panel stored XSS (#421)
+- Stored XSS to reverse shell (#422)
+- Stored XSS to SSRF (#423)
+
+#### Other Changes
+
+- Added safety controls around agent working directory deletion 🔒
+- Added `/skills` command to enumerate Claude Code skills 🧰
+- Renamed "Audio Notifications" to "Custom Notifications" 🔔
+- Auto-scroll respects user scroll position in AI mode 📜
+- Spec-Kit and OpenSpec commands accept arguments properly ⚙️
+- @ message entire groups in Group Chat 👥
+- Group chats can be archived 📦
+- Swap the provider behind an agent ↪️
+- Scroll to latest messages as they stream 📜
+- maestro-cli can send messages to agents 🧵
+- VSCode-style semantic icon mapping in file explorer ✅
+- Automatic tab naming by default 🏷️
+- WakaTime integration ⏱️
+- Window chrome toggle options 🪟
+- Settings → Display split from General ⚙️
+- Table of contents for markdown previews 📄
+- Document preview from graph view 📈
+- Ignore remote file patterns over SSH 🚭
+- Context calculation bug fixes 🧮
+- Save AI responses to markdown 💾
+- Hide empty "Ungrouped Agents" folder 📁
+- File preview detects disk updates ↪️
+- Dynamic Auto Run task counting ✈️
+- Force kill running Auto Run tasks 🔪
+- Enhanced batch runner validation ☑️
+- Improved history help modal 📝
+- Sparkle effect when agents are working ✨
+
+---
+
+## Previous Releases
+
+### v0.14.x - Document Graphs, SSH Agents, Inline Wizard
+
+**Latest**: v0.14.5 | Released January 24, 2026
+
+#### Major Features
+
+**🗄️ Document Graphs** - Launch from file preview or File tree panel. Explore relationships between Markdown documents that contain links between documents and to URLs.
+
+**📶 SSH Support** - Manage remote agents with feature parity over SSH. Includes support for Git and File tree panels. Works for Group Chat too.
+
+**🧙‍♂️ Inline Wizard** - Generate Auto Run Playbooks via `/wizard` or a button in the Auto Run panel.
+
+#### Other Changes
+
+- Desktop performance improvements 🐌
+- Local manifest feature for custom playbooks 📖
+- Activity history awareness for agents 📜
+- Markdown rendering in mobile view 📱
+- BlueSky social media support 🦋
+- GPU rendering and confetti toggles 🎊
+- Better large file handling 🗄️
+- Improved User Dashboard 🏛️
+- Leaderboard cross-system sync 🏆
+- Agent duplication feature ✌️
+- Prevent sleep while agents active 🛌
+- GitHub Gist publishing 📝
+- Improved shell detection 🐚
+- Toggle bookmark shortcut ⌨️
+
+**Contributors**: @t1mmen @aejfager @Crumbgrabber @whglaser @b3nw @deandebeer @shadown @breki @charles-dyfis-net @ronaldeddings @jlengrand @ksylvan
+
+---
+
+### v0.13.x - Playbook Exchange & Usage Dashboard
+
+**Latest**: v0.13.2 | Released December 29, 2025
+
+- Global usage dashboard 🏛️
+- Playbook Exchange for downloading pre-defined playbooks 📕
+- Bundled OpenSpec commands 📝
+- Pre-release channel support 🧪
+- Global hands-on time tracking ⏱️
+- Agent settings keyboard shortcut ⌨️
+- Directory size calculation 📊
+- Sleep detection for time tracking ⏰
+- Linux ARM64 build fixes 🏭
+
+---
+
+### v0.12.x - Thinking, Spec-Kits, Context Management
+
+**Latest**: v0.12.3 | Released December 28, 2025
+
+**🤔 Show Thinking** - Toggle to display agent thinking process. Default off, configurable per tab.
+
+**🎯 GitHub Spec-Kit Integration** - Added Spec-Kit commands with built-in updater. Custom `/speckit-implement` creates Auto Run docs.
+
+**📖 Context Management Tools** - Compress, merge, and transfer contexts between agents. Configurable warnings at 60% and 80% usage.
+
+#### Other Changes
+
+- Hosted documentation through Mintlify 📚
+- Export tabs as themed HTML 📄
+- Publish files as Gists 🌐
+- Tab hover overlay menu 📋
+- Social handles in achievement sharing 🏆
+
+---
+
+### v0.11.x - Worktrees
+
+**Latest**: v0.11.0 | Released December 22, 2025
+
+**🌳 Git Worktree Support** - Any agent bound to a Git repository can enable worktrees. Each shows as a sub-agent with independent write-lock and Auto Run. Develop in parallel and issue PRs from within Maestro.
+
+#### Other Changes
+
+- @ file mentions include Auto Run documents 🗄️
+- Wizard detects and continues past projects 🧙
+- Bug fixes 🐛
+
+**Thanks**: @petersilberman
+
+---
+
+### v0.10.x - Group Chat
+
+**Latest**: v0.10.2 | Released December 22, 2025
+
+- Export group chats as HTML ⬇️
+- Enhanced process viewer with details 💻
+- Auto Run stall detection 🔁
+- Improved Codex session discovery 🔍
+- Windows compatibility fixes 🐛
+- Linux ARM64 build fix 🐜
+
+**Thanks**: @LilYoopug @oliveiraantoniocc
+
+---
+
+### v0.9.x - Codex & OpenCode Support
+
+**Latest**: v0.9.1 | Released December 18, 2025
+
+- Sentry crash reporting with opt-out 🐛
+- Multi-provider support refactor 👨‍👩‍👧‍👦
+- OpenAI Codex support 👨‍💻
+- OpenCode support 👩‍💻
+- Error handling and recovery 🚨
+- CLI arguments for providers ✨
+
+---
+
+### v0.8.x - Nudge Messages & Updates
+
+**Latest**: v0.8.8 | Released December 17, 2025
+
+- "Nudge" messages for every interactive prompt 📌
+- Battery consumption improvements 📉
+- Fuzzy file search in quick actions 🔍
+- Clear command for terminal 🧹
+- Enhanced update checker 🚀
+- RPM package compatibility 🐧
+- Tab unread toggle shortcut ⌨️
+- Stall detection improvements 📖
+- Static port selection for remote 🎮
+
+**Thanks**: @JOduMonT @mattjay @b3nw
+
+---
+
+### v0.7.x - Onboarding and Tour
+
+**Latest**: v0.7.4 | Released December 12, 2025
+
+- Comprehensive onboarding wizard 🚀
+- Integrated tour system 🎨
+- Confidence display in wizard UI ⌨️
+- First Run Celebration modal 🎉
+- Auto Run fullscreen mode 🖥️
+- Performance optimizations ⚡
+- Drag-and-drop queue reordering 🎯
+- Automatic update checking 🚀
+
+---
+
+### v0.6.x - Autorun Overhaul
+
+**Latest**: v0.6.1 | Released December 4, 2025
+
+- Recursive subfolder support 🗂️
+- Expandable folder navigation 🌳
+- Batch runner with progress bars 📊
+- Dynamic task re-counting 🔄
+- Template variable context 🚀
+- System Process Monitor kill 💀
+- Tab switcher timestamps 🕐
+- Playbook system 📚
+- Git worktree support 🌳
+- Auto-save with debounce 💾
+
+---
+
+### v0.5.x - Badges and Tunnels
+
+**Latest**: v0.5.1 | Released December 2, 2025
+
+- "Made with Maestro" badge 🎯
+- Redesigned app icon 🎨
+- Image diff viewer 🖼️
+- Enhanced confetti 🎊
+- Binary file detection 🔧
+- Git file reading at refs 📁
+
+---
+
+### v0.4.x - Navigation & Tabs
+
+**Latest**: v0.4.1 | Released December 2, 2025
+
+- Tab Switcher modal 🚀
+- @ mention file completion 📁
+- Navigation history ⏮️
+- Tab completion filters 🌳
+- Unread indicators 📬
+- Token counting display 🔢
+- Markdown rendering toggle 📝
+- Context menus 🖱️
+
+---
+
+### v0.3.x - Tab Support
+
+**Latest**: v0.3.1 | Released November 30, 2025
+
+- Auto-scroll for slash commands ⚡
+- TTS audio feedback 🔊
+- Jump to bottom shortcut ⬇️
+- Alphabetical shortcuts 📁
+- Full commit messages 📝
+- Process tree expand/collapse 🌳
+
+---
+
+### v0.2.x - Mobile Web Interface
+
+**Latest**: v0.2.3 | Released November 29, 2025
+
+- Enhanced mobile interface 📱
+- ThinkingStatusPill with tokens ⏱️
+- Image lightbox 🖼️
+- Global Claude stats 📈
+- Scratchpad with search 🔍
+- Splash screen 🎨
+
+---
+
+### v0.1.x - Initial Releases
+
+**Latest**: v0.1.6 | Released November 27, 2025
+
+- Template variables 🎯
+- Session bookmarking ⭐
+- Git Log Viewer 📅
+- Tag indicators 🏷️
+- Improved search UX 🎨
+
+---
+
+## Download Releases
+
+All releases are available on the [GitHub Releases page](https://github.com/RunMaestro/Maestro/releases).
+
+Maestro is available for:
+- **macOS** - Apple Silicon (arm64) and Intel (x64)
+- **Windows** - x64
+- **Linux** - x64 and arm64, AppImage, deb, and rpm packages
+
+## Stay Updated
+
+Enable automatic updates in **Settings → General → Updates** to receive new releases as soon as they're available.

@@ -1,0 +1,467 @@
+---
+title: SSH Remote Execution
+description: Run AI agents on remote servers via SSH for powerful distributed workflows
+---
+
+## Overview
+
+Maestro supports running AI agents on remote servers via SSH. This enables powerful workflows like running agents on GPU-equipped servers, accessing remote codebases, or distributing work across multiple machines.
+
+<Warning>
+**CRITICAL:** Any feature that spawns agent processes MUST support SSH remote execution. Without proper SSH wrapping, agents will always run locally even when configured for remote execution.
+</Warning>
+
+## SSH Remote Configuration
+
+### Configuration Structure
+
+```typescript
+interface SshRemoteConfig {
+  id: string;                  // Unique identifier
+  name: string;                // Display name
+  host: string;                // Hostname or IP
+  port: number;                // SSH port (default: 22)
+  username?: string;           // SSH username (optional with config)
+  privateKeyPath?: string;     // Path to private key (optional)
+  passphrase?: string;         // Key passphrase (if needed)
+  useSshConfig: boolean;       // Use ~/.ssh/config
+  customOptions?: Record<string, string>; // Custom SSH options
+}
+```
+
+### Setting Up SSH Remote
+
+<Steps>
+  <Step title="Open Settings">
+    Press `Cmd+,` and navigate to "SSH Remote" section.
+  </Step>
+  
+  <Step title="Add SSH Configuration">
+    Click "Add SSH Remote" and configure:
+    - **Name**: Display name (e.g., "GPU Server")
+    - **Host**: Server hostname or IP
+    - **Port**: SSH port (default 22)
+    - **Username**: SSH username (optional if in ~/.ssh/config)
+    - **Private Key**: Path to SSH key (optional)
+  </Step>
+  
+  <Step title="Test Connection">
+    Click "Test Connection" to verify:
+    - SSH connection succeeds
+    - Authentication works
+    - Remote shell is accessible
+  </Step>
+  
+  <Step title="Enable for Agent">
+    In Agent Settings, enable SSH remote and select the configuration.
+  </Step>
+</Steps>
+
+## Default SSH Options
+
+<Info>
+Maestro uses these default SSH options for all connections:
+</Info>
+
+```typescript
+const defaultSshOptions = {
+  BatchMode: 'yes',              // Disable password prompts (key-only)
+  StrictHostKeyChecking: 'accept-new', // Auto-accept new host keys
+  ConnectTimeout: '10',          // Connection timeout in seconds
+  ClearAllForwardings: 'yes',    // Disable port forwarding
+  RequestTTY: 'no',              // Don't request TTY for commands
+};
+```
+
+### Custom SSH Options
+
+Add custom options in the SSH configuration:
+
+```typescript
+customOptions: {
+  'ServerAliveInterval': '60',
+  'ServerAliveCountMax': '3',
+  'Compression': 'yes'
+}
+```
+
+## Using ~/.ssh/config
+
+<Tip>
+Enable "Use SSH Config" to inherit settings from your `~/.ssh/config` file.
+</Tip>
+
+### Example SSH Config
+
+```bash
+# ~/.ssh/config
+Host gpu-server
+  HostName 192.168.1.100
+  User developer
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  ServerAliveInterval 60
+  Compression yes
+```
+
+### Maestro Configuration
+
+With SSH config, you only need:
+
+```typescript
+{
+  id: 'gpu-1',
+  name: 'GPU Server',
+  host: 'gpu-server',  // Matches Host in ~/.ssh/config
+  port: 22,
+  useSshConfig: true,
+  // username and privateKeyPath inherited from config
+}
+```
+
+## Agent-Level SSH Configuration
+
+### Per-Agent Settings
+
+Each agent can have its own SSH configuration:
+
+```typescript
+interface AgentSshRemoteConfig {
+  enabled: boolean;              // Enable SSH for this agent
+  remoteId: string | null;       // SSH config ID to use
+  workingDirOverride?: string;   // Override working directory
+}
+```
+
+### Configuring in UI
+
+<Steps>
+  <Step title="Open Agent Settings">
+    Select an agent and press `Alt+Cmd+,` or right-click > Settings.
+  </Step>
+  
+  <Step title="Enable SSH Remote">
+    In the "SSH Remote" section, toggle "Enable SSH Remote Execution".
+  </Step>
+  
+  <Step title="Select Configuration">
+    Choose the SSH remote configuration to use.
+  </Step>
+  
+  <Step title="Set Working Directory">
+    Optionally override the working directory on the remote host:
+    ```
+    /home/developer/projects/my-app
+    ```
+  </Step>
+</Steps>
+
+## SSH Spawn Wrapper
+
+<Warning>
+All code that spawns agent processes must use `wrapSpawnWithSsh()` to support SSH remote execution.
+</Warning>
+
+### Wrapper Configuration
+
+```typescript
+interface SshSpawnWrapConfig {
+  command: string;                    // Command to execute
+  args: string[];                     // Command arguments
+  cwd: string;                        // Working directory
+  prompt?: string;                    // Prompt to send
+  customEnvVars?: Record<string, string>; // Environment variables
+  promptArgs?: (prompt: string) => string[]; // Prompt flag builder
+  noPromptSeparator?: boolean;        // No -- separator before prompt
+  agentBinaryName?: string;           // Agent binary name (e.g., 'claude')
+}
+```
+
+### Usage Example
+
+```typescript
+import { wrapSpawnWithSsh } from './utils/ssh-spawn-wrapper';
+import { createSshRemoteStoreAdapter } from './utils/ssh-remote-resolver';
+
+// Prepare spawn config
+const config = {
+  command: '/usr/local/bin/claude',
+  args: ['--print'],
+  cwd: '/path/to/project',
+  prompt: 'Hello, Claude!',
+  agentBinaryName: 'claude'
+};
+
+// Wrap with SSH if enabled
+const wrapped = await wrapSpawnWithSsh(
+  config,
+  session.sshRemoteConfig,  // From agent settings
+  createSshRemoteStoreAdapter(settingsStore)
+);
+
+// Spawn with wrapped config
+processManager.spawn({
+  sessionId: session.id,
+  toolType: session.agentType,
+  command: wrapped.command,     // May be 'ssh' if SSH enabled
+  args: wrapped.args,           // SSH args + remote command
+  cwd: wrapped.cwd,             // Local home for SSH
+  customEnvVars: wrapped.customEnvVars, // undefined for SSH
+  prompt: wrapped.prompt        // undefined for small prompts
+});
+```
+
+### Wrapper Result
+
+```typescript
+interface SshSpawnWrapResult {
+  command: string;              // 'ssh' or original command
+  args: string[];               // Full args including SSH flags
+  cwd: string;                  // Local home or original
+  customEnvVars?: Record<string, string>; // undefined for SSH
+  prompt?: string;              // undefined if embedded in args
+  sshRemoteUsed: SshRemoteConfig | null; // Config if SSH used
+}
+```
+
+## Prompt Handling
+
+<Info>
+SSH remote execution handles prompts differently based on size to avoid command-line length limits.
+</Info>
+
+<Tabs>
+  <Tab title="Small Prompts (<4000 chars)">
+    **Embedded in Command Line**
+    
+    Small prompts are embedded directly in the SSH command:
+    
+    ```bash
+    ssh user@host 'cd /project && claude --print -- "Your prompt here"'
+    ```
+    
+    Advantages:
+    - Single command execution
+    - No stdin complexity
+    - Works with all agents
+  </Tab>
+  
+  <Tab title="Large Prompts (≥4000 chars)">
+    **Sent via stdin**
+    
+    Large prompts use stdin with stream-json format:
+    
+    ```bash
+    ssh user@host 'cd /project && claude --print --input-format stream-json'
+    ```
+    
+    The prompt is then sent via stdin by ProcessManager.
+    
+    Advantages:
+    - No command-line length limits
+    - Handles very large prompts
+    - Supports streaming input
+  </Tab>
+</Tabs>
+
+## Context Grooming with SSH
+
+<Note>
+Context grooming fully supports SSH remote execution, allowing you to groom context on the remote host.
+</Note>
+
+### Example
+
+```typescript
+const result = await window.maestro.context.groomContext(
+  '/path/to/project',
+  'claude-code',
+  'Summarize this conversation focusing on key decisions',
+  {
+    sshRemoteConfig: {
+      enabled: true,
+      remoteId: 'gpu-server',
+      workingDirOverride: '/home/dev/project'
+    },
+    customPath: '/opt/claude/bin/claude',
+    customEnvVars: {
+      'ANTHROPIC_API_KEY': 'sk-...'
+    }
+  }
+);
+
+console.log('Groomed summary:', result);
+```
+
+## SSH Command Building
+
+### Command Structure
+
+```bash
+ssh [SSH_OPTIONS] [USER@]HOST [COMMAND]
+```
+
+### Built Command Example
+
+```bash
+ssh \
+  -o BatchMode=yes \
+  -o StrictHostKeyChecking=accept-new \
+  -o ConnectTimeout=10 \
+  -o ClearAllForwardings=yes \
+  -o RequestTTY=no \
+  -p 22 \
+  -i ~/.ssh/id_ed25519 \
+  user@gpu-server \
+  'cd /home/dev/project && export VAR=value && claude --print -- "prompt"'
+```
+
+### Environment Variables
+
+Environment variables are set in the remote command:
+
+```typescript
+customEnvVars: {
+  'ANTHROPIC_API_KEY': 'sk-...',
+  'NODE_ENV': 'production'
+}
+
+// Becomes:
+'export ANTHROPIC_API_KEY="sk-..." NODE_ENV="production" && command'
+```
+
+## Testing SSH Connections
+
+### Connection Test
+
+```typescript
+interface SshRemoteTestResult {
+  success: boolean;           // Overall success
+  message: string;            // Status message
+  details?: {                 // Connection details
+    hostname: string;
+    username: string;
+    platform: string;
+    agentAvailable?: boolean; // If agent command tested
+  };
+  error?: string;             // Error message if failed
+}
+```
+
+### Test via API
+
+```typescript
+const result = await sshRemoteManager.testConnection(
+  config,
+  'claude'  // Optional: test if agent binary is available
+);
+
+if (result.success) {
+  console.log('Connected to:', result.details.hostname);
+  console.log('Platform:', result.details.platform);
+  console.log('Agent available:', result.details.agentAvailable);
+} else {
+  console.error('Connection failed:', result.error);
+}
+```
+
+## Troubleshooting
+
+<Accordion title="Authentication Failures">
+  **Symptoms:**
+  - "Permission denied (publickey)"
+  - Connection hangs then times out
+  
+  **Solutions:**
+  1. Verify SSH key is correct and readable
+  2. Check key is added to remote `~/.ssh/authorized_keys`
+  3. Ensure `BatchMode: yes` doesn't conflict with your setup
+  4. Try using `~/.ssh/config` with `useSshConfig: true`
+</Accordion>
+
+<Accordion title="Command Not Found">
+  **Symptoms:**
+  - "claude: command not found" on remote
+  - Agent binary not accessible
+  
+  **Solutions:**
+  1. Use full path in `customPath` (e.g., `/usr/local/bin/claude`)
+  2. Set `PATH` in `customEnvVars`
+  3. Check agent is installed on remote host
+  4. Verify binary name matches remote (use `agentBinaryName`)
+</Accordion>
+
+<Accordion title="Working Directory Issues">
+  **Symptoms:**
+  - "No such file or directory"
+  - Agent can't find project files
+  
+  **Solutions:**
+  1. Use absolute paths for `cwd`
+  2. Set `workingDirOverride` in agent SSH config
+  3. Verify directory exists on remote host
+  4. Check permissions on remote directory
+</Accordion>
+
+<Accordion title="Connection Timeouts">
+  **Symptoms:**
+  - Connections hang and timeout
+  - "Connection timed out" errors
+  
+  **Solutions:**
+  1. Increase `ConnectTimeout` in custom options
+  2. Add `ServerAliveInterval` to keep connection alive
+  3. Check firewall rules
+  4. Verify network connectivity
+</Accordion>
+
+## Security Best Practices
+
+<Warning>
+Follow these security practices when using SSH remote execution:
+</Warning>
+
+### 1. Use SSH Keys, Not Passwords
+
+```bash
+# Generate ED25519 key (recommended)
+ssh-keygen -t ed25519 -C "maestro@myhost"
+
+# Add to remote
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@host
+```
+
+### 2. Protect Private Keys
+
+```bash
+# Set correct permissions
+chmod 600 ~/.ssh/id_ed25519
+chmod 644 ~/.ssh/id_ed25519.pub
+```
+
+### 3. Use Key Passphrases
+
+- Always set a passphrase on private keys
+- Use ssh-agent to avoid repeated passphrase entry
+- Never store passphrases in Maestro config
+
+### 4. Limit Key Scope
+
+```bash
+# In remote ~/.ssh/authorized_keys, restrict key usage:
+command="/usr/local/bin/claude",no-port-forwarding ssh-ed25519 AAAA...
+```
+
+### 5. Monitor SSH Access
+
+```bash
+# On remote host, monitor SSH logs
+tail -f /var/log/auth.log  # Linux
+tail -f /var/log/system.log  # macOS
+```
+
+## Next Steps
+
+- Learn about [Context Management](/guides/context-management) for remote context grooming
+- Explore [Configuration](/guides/configuration) for advanced SSH settings
+- Review [General Usage](/guides/general-usage) for agent management workflows

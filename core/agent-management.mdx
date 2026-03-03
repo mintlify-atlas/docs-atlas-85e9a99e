@@ -1,0 +1,263 @@
+---
+title: Multi-Agent Orchestration
+description: Manage multiple AI coding assistants simultaneously with Maestro's agent-first architecture
+---
+
+Maestro organizes your work around **Agents** - isolated workspaces that each run their own AI assistant and terminal. Think of agents as independent projects, each with its own working directory, conversation tabs, and configuration.
+
+## Agent Architecture
+
+Each agent in Maestro runs **two processes simultaneously**:
+
+```typescript
+interface Session {
+  id: string;              // Unique identifier
+  aiPid: number;           // AI agent process (suffixed -ai)
+  terminalPid: number;     // Terminal process (suffixed -terminal)
+  inputMode: 'ai' | 'terminal';  // Which process receives input
+}
+```
+
+This dual-process design enables seamless switching between AI and terminal modes without restarting processes.
+
+## Supported AI Agents
+
+<Tabs>
+  <Tab title="Claude Code">
+    **Status**: Active
+
+    Anthropic's official CLI coding assistant with full conversation history support.
+
+    - Native session management via `~/.claude/projects/`
+    - Batch mode execution with `--print --output-format json`
+    - Stream-JSON mode for multimodal inputs (images)
+    - Provider session pooling and resumption
+  </Tab>
+  
+  <Tab title="OpenCode">
+    **Status**: Active
+
+    Community-driven AI coding assistant.
+
+    - Real-time streaming responses
+    - Multi-model support
+    - Context-aware completions
+  </Tab>
+  
+  <Tab title="OpenAI Codex">
+    **Status**: Active
+
+    OpenAI's code generation model.
+
+    - Direct API integration
+    - Token usage tracking
+    - Custom model selection
+  </Tab>
+  
+  <Tab title="Factory Droid">
+    **Status**: Active
+
+    Specialized agent for factory automation patterns.
+
+    - Template-based workflows
+    - Batch processing support
+  </Tab>
+</Tabs>
+
+## Creating Agents
+
+<Steps>
+  <Step title="Open New Agent Dialog">
+    Press `Cmd+N` or click the **+** button in the Left Bar to open the new agent wizard.
+    
+    **Location**: `src/renderer/components/NewInstanceModal.tsx`
+  </Step>
+  
+  <Step title="Select Agent Type">
+    Choose your AI assistant from the dropdown. Maestro auto-detects installed agents via PATH.
+    
+    **Detection**: `src/main/agent-detector.ts`
+  </Step>
+  
+  <Step title="Configure Working Directory">
+    Select the project folder where the agent will operate. Each agent maintains its own workspace.
+  </Step>
+  
+  <Step title="Name Your Agent">
+    Give it a memorable name (e.g., "Frontend", "Backend", "Docs"). This appears in the Left Bar.
+  </Step>
+</Steps>
+
+<Info>
+  **Pro Tip**: Use `Cmd+Shift+N` to open the **Agent Wizard** for guided setup with multi-phase planning.
+</Info>
+
+## Agent States
+
+Agents display color-coded status indicators in the Left Bar:
+
+| Color | State | Meaning |
+|-------|-------|----------|
+| **Green** | Ready | Agent is idle and ready for input |
+| **Yellow** | Busy | Agent is thinking or processing |
+| **Red** | Error | No connection or error state |
+| **Pulsing Orange** | Connecting | Agent is starting up |
+
+**Implementation**: `src/renderer/utils/theme.ts:getStatusColor()`
+
+## Switching Between Agents
+
+<Tabs>
+  <Tab title="Keyboard">
+    ```bash
+    Cmd+[        # Previous agent
+    Cmd+]        # Next agent
+    Alt+Cmd+1-0  # Jump to specific agent (1-10)
+    ```
+    
+    **Source**: `src/renderer/constants/shortcuts.ts:14-15`
+  </Tab>
+  
+  <Tab title="Mouse">
+    Click any agent in the **Left Bar** to switch to it. The active agent is highlighted with an accent color.
+  </Tab>
+  
+  <Tab title="Search">
+    Press `Cmd+F` when the Left Bar is focused to filter agents by name.
+    
+    **Filter Shortcut**: `src/renderer/constants/shortcuts.ts:94`
+  </Tab>
+</Tabs>
+
+## Agent Groups
+
+Organize related agents into collapsible groups:
+
+<Steps>
+  <Step title="Create a Group">
+    Right-click in the Left Bar → **Create Group** or use `Cmd+Shift+M` to move an agent to a new group.
+  </Step>
+  
+  <Step title="Add Emoji Icon">
+    Groups support emoji icons for visual organization (e.g., 🚀 for deployment agents).
+  </Step>
+  
+  <Step title="Drag and Drop">
+    Drag agents between groups or reorder them within groups.
+  </Step>
+  
+  <Step title="Collapse/Expand">
+    Click the chevron icon to collapse groups and save screen space.
+  </Step>
+</Steps>
+
+```typescript
+// Group interface
+interface Group {
+  id: string;
+  name: string;
+  emoji: string;
+  collapsed: boolean;
+}
+```
+
+**Source**: `src/shared/types.ts:15-20`
+
+## Agent Configuration
+
+Customize each agent's behavior independently:
+
+### Per-Agent Settings
+
+- **Custom Binary Path**: Use a specific agent binary instead of the system default
+- **Custom Arguments**: Pass additional CLI flags to the agent
+- **Environment Variables**: Set agent-specific environment variables
+- **SSH Remote Execution**: Run the agent on a remote host via SSH
+
+<Warning>
+  When implementing features that spawn agent processes, you **must** support SSH remote execution using `wrapSpawnWithSsh()` from `src/main/utils/ssh-spawn-wrapper.ts`.
+</Warning>
+
+### Editing Agent Config
+
+Right-click any agent → **Edit Agent** or press `Alt+Cmd+,` to open the agent configuration panel.
+
+**Component**: `src/renderer/components/shared/AgentConfigPanel.tsx`
+
+## Multi-Agent Workflows
+
+### Group Chat
+
+Coordinate multiple agents to solve complex problems:
+
+```mermaid
+graph LR
+    User[User] --> Moderator[Moderator AI]
+    Moderator --> AgentA[@Frontend]
+    Moderator --> AgentB[@Backend]
+    Moderator --> AgentC[@DevOps]
+    AgentA --> Moderator
+    AgentB --> Moderator
+    AgentC --> Moderator
+    Moderator --> User
+```
+
+Press `Alt+Cmd+C` to create a group chat. The moderator AI routes questions to relevant agents and synthesizes their responses.
+
+**Architecture**: `src/main/group-chat/`
+
+### Session Discovery
+
+Browse and resume provider sessions across all agents:
+
+1. Press `Cmd+Shift+L` to open the **Agent Sessions Browser**
+2. View all Claude Code sessions from `~/.claude/projects/`
+3. Search by content or filter by project
+4. Resume any session in a new tab
+
+**Modal**: `src/renderer/components/AgentSessionsModal.tsx`
+
+## Keyboard Shortcuts Reference
+
+```bash
+# Agent Management
+Cmd+N              # New agent
+Cmd+Shift+N        # New agent wizard
+Cmd+Shift+Backspace # Remove agent (with confirmation)
+
+# Navigation
+Cmd+[              # Previous agent
+Cmd+]              # Next agent
+Alt+Cmd+1-0        # Jump to agent 1-10
+Cmd+Shift+,        # Navigate back (history)
+Cmd+Shift+.        # Navigate forward (history)
+
+# Organization
+Cmd+Shift+M        # Move agent to group
+Alt+Cmd+C          # New group chat
+Cmd+Shift+B        # Toggle bookmark
+
+# Views
+Cmd+Shift+L        # View agent sessions
+Cmd+Shift+A        # Focus Left Bar
+Alt+Meta+ArrowLeft # Toggle Left Bar
+```
+
+**Full list**: `src/renderer/constants/shortcuts.ts`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Dual-Mode Sessions" icon="toggle-on" href="/core/dual-mode-sessions">
+    Learn how to switch between AI and terminal modes
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Master the keyboard-first interface
+  </Card>
+  <Card title="Session Discovery" icon="search" href="/core/session-discovery">
+    Browse and resume provider sessions
+  </Card>
+  <Card title="Git Integration" icon="git-branch" href="/core/git-integration">
+    Version control features and workflows
+  </Card>
+</CardGroup>

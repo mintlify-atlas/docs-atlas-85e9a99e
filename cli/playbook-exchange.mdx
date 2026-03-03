@@ -1,0 +1,322 @@
+---
+title: Playbook Exchange
+description: Share, discover, and import community playbooks from the Maestro marketplace
+---
+
+The Playbook Exchange is a curated marketplace of community-contributed playbooks for common development workflows. Import ready-to-use playbooks or share your own with the community.
+
+## What is the Playbook Exchange?
+
+The Playbook Exchange hosts playbooks for:
+- Code review workflows
+- Testing automation
+- Documentation generation
+- Refactoring patterns
+- Deployment checklists
+- Onboarding guides
+
+Each playbook includes:
+- Description and use case
+- Template variables
+- Sample output
+- Author and version info
+
+## Accessing the Exchange
+
+### Via UI
+
+1. Open the **Auto Run** panel (Right Bar → Auto Run tab)
+2. Click **Browse Playbook Exchange**
+3. Search or browse by category
+4. Click **Import** to add to your workspace
+
+### Via CLI
+
+```bash
+# List available playbooks in the exchange
+maestro-cli marketplace list
+
+# Search for specific playbooks
+maestro-cli marketplace search "code review"
+
+# Import a playbook
+maestro-cli marketplace import <playbook-id>
+```
+
+## Popular Playbooks
+
+### Code Review Assistant
+
+**ID**: `code-review-assistant`  
+**Description**: Automated code review checklist covering style, security, performance, and tests.
+
+**Variables**:
+- `$PR_URL` - Pull request URL
+- `$FILES` - Files to review (optional)
+
+**Tasks**:
+- Check for security vulnerabilities
+- Review error handling
+- Verify test coverage
+- Check code style compliance
+- Review performance implications
+
+### Documentation Generator
+
+**ID**: `doc-generator`  
+**Description**: Generate comprehensive documentation from source code.
+
+**Variables**:
+- `$MODULE` - Module or package name
+- `$OUTPUT_DIR` - Documentation output directory
+
+**Tasks**:
+- Extract API signatures
+- Generate usage examples
+- Create README content
+- Build reference docs
+
+### Test Suite Builder
+
+**ID**: `test-suite-builder`  
+**Description**: Create a complete test suite for a module.
+
+**Variables**:
+- `$MODULE_PATH` - Path to module
+- `$TEST_FRAMEWORK` - Jest, Vitest, Mocha, etc.
+
+**Tasks**:
+- Unit tests for each function
+- Integration tests
+- Edge case coverage
+- Mocking setup
+
+### Refactoring Checklist
+
+**ID**: `refactor-checklist`  
+**Description**: Systematic refactoring workflow with validation.
+
+**Variables**:
+- `$TARGET_FILE` - File to refactor
+- `$REFACTOR_TYPE` - Extract, inline, rename, etc.
+
+**Tasks**:
+- Analyze current code
+- Identify refactoring opportunities
+- Apply transformations
+- Run tests to verify
+- Update documentation
+
+## Importing Playbooks
+
+<Tabs>
+  <Tab title="From URL">
+    Import a playbook from a GitHub Gist or repository:
+
+    ```bash
+    maestro-cli marketplace import-url https://gist.github.com/user/abc123
+    ```
+
+    The playbook will be extracted and added to your workspace.
+  </Tab>
+
+  <Tab title="From File">
+    Import a local `.zip` or `.md` file:
+
+    ```bash
+    maestro-cli marketplace import-file ./playbooks/my-playbook.zip
+    ```
+  </Tab>
+
+  <Tab title="From Marketplace ID">
+    Import by ID from the curated exchange:
+
+    ```bash
+    maestro-cli marketplace import code-review-assistant
+    ```
+  </Tab>
+</Tabs>
+
+## Exporting Playbooks
+
+Share your playbooks with the community:
+
+### Export as ZIP
+
+```bash
+maestro-cli marketplace export <agent-id> <playbook-id>
+```
+
+This creates a `.zip` file containing:
+- Playbook markdown
+- Metadata (author, version, tags)
+- Assets (images, scripts, config files)
+
+### Publish to Exchange
+
+<Steps>
+  <Step title="Prepare your playbook">
+    Ensure your playbook has:
+    - Clear description
+    - Well-documented template variables
+    - Example usage
+    - Proper task structure
+  </Step>
+
+  <Step title="Export with metadata">
+    ```bash
+    maestro-cli marketplace export my-agent my-playbook \
+      --name "My Awesome Playbook" \
+      --description "Does something useful" \
+      --author "Your Name" \
+      --tags "testing,automation,ci"
+    ```
+  </Step>
+
+  <Step title="Submit to GitHub">
+    Create a pull request to the [Maestro Playbooks](https://github.com/RunMaestro/Playbooks) repository.
+  </Step>
+
+  <Step title="Wait for review">
+    The Maestro team will review your playbook for quality, security, and usefulness.
+  </Step>
+</Steps>
+
+## Playbook Format
+
+Playbooks in the exchange follow this structure:
+
+```markdown
+# Playbook Name
+
+**Author**: Your Name  
+**Version**: 1.0.0  
+**Tags**: tag1, tag2  
+**Description**: Brief description of what this playbook does.
+
+## Variables
+
+- `$VARIABLE_NAME` - Description
+
+## Tasks
+
+- [ ] Task 1: Description
+- [ ] Task 2: Description
+```
+
+### Metadata Fields
+
+<ParamField path="name" type="string" required>
+  Human-readable playbook name
+</ParamField>
+
+<ParamField path="author" type="string" required>
+  Playbook author (can be GitHub username)
+</ParamField>
+
+<ParamField path="version" type="string" required>
+  Semantic version (1.0.0)
+</ParamField>
+
+<ParamField path="description" type="string" required>
+  Brief description (1-2 sentences)
+</ParamField>
+
+<ParamField path="tags" type="string[]">
+  Category tags for discovery (testing, ci, docs, etc.)
+</ParamField>
+
+<ParamField path="variables" type="object">
+  Template variables with descriptions
+</ParamField>
+
+<ParamField path="assets" type="string[]">
+  Additional files (scripts, configs) bundled with playbook
+</ParamField>
+
+## Asset Bundling
+
+Include additional files with your playbook:
+
+```
+my-playbook/
+  playbook.md          # Main playbook file
+  metadata.json        # Metadata
+  assets/
+    setup.sh           # Setup script
+    config.template    # Config template
+    README.md          # Detailed usage guide
+```
+
+When imported, assets are extracted to `.maestro/playbooks/<playbook-id>/assets/`.
+
+## Security Considerations
+
+<Warning>
+Playbooks can execute arbitrary code. Always review playbooks before importing:
+- Check for suspicious commands
+- Verify asset files are safe
+- Test in a non-production environment first
+</Warning>
+
+## Marketplace Guidelines
+
+To be accepted into the exchange, playbooks must:
+
+1. **Be well-documented** - Clear descriptions and examples
+2. **Use template variables** - No hardcoded paths or credentials
+3. **Be idempotent** - Safe to run multiple times
+4. **Include error handling** - Graceful failure modes
+5. **Respect privacy** - No telemetry or data collection
+6. **Be maintained** - Author commits to fixing reported issues
+
+## Community Ratings
+
+Playbooks in the exchange can be rated:
+
+- ⭐⭐⭐⭐⭐ Excellent - Well-tested, widely used
+- ⭐⭐⭐⭐ Good - Works well, minor rough edges
+- ⭐⭐⭐ Fair - Functional but needs improvement
+- ⭐⭐ Poor - Limited use or quality issues
+- ⭐ Broken - Doesn't work as described
+
+<Tip>
+**Pro Tip**: Sort by rating and download count to find battle-tested playbooks.
+</Tip>
+
+## CLI Reference
+
+```bash
+# List all exchange playbooks
+maestro-cli marketplace list [--category <cat>]
+
+# Search playbooks
+maestro-cli marketplace search <query>
+
+# Show playbook details
+maestro-cli marketplace show <playbook-id>
+
+# Import from exchange
+maestro-cli marketplace import <playbook-id>
+
+# Import from URL
+maestro-cli marketplace import-url <url>
+
+# Import from file
+maestro-cli marketplace import-file <path>
+
+# Export playbook
+maestro-cli marketplace export <agent-id> <playbook-id> [options]
+
+# Rate a playbook
+maestro-cli marketplace rate <playbook-id> <1-5>
+```
+
+<CardGroup cols={2}>
+  <Card title="Auto Run & Playbooks" icon="play" href="/power/auto-run-playbooks">
+    Learn about playbook execution
+  </Card>
+  <Card title="Playbook Creation" icon="file-plus" href="/guides/playbook-creation">
+    Create your own playbooks
+  </Card>
+</CardGroup>

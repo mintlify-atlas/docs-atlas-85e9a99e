@@ -1,0 +1,393 @@
+---
+title: Keyboard-First Design
+description: Master Maestro's comprehensive keyboard shortcuts for maximum productivity
+---
+
+Maestro is designed for **keyboard-first workflows**. Every feature is accessible via keyboard shortcuts, and most operations never require touching the mouse.
+
+## Quick Reference
+
+Press `Cmd+/` at any time to view the shortcuts help modal.
+
+**Modal**: `src/renderer/components/ShortcutsHelpModal.tsx`
+
+## Essential Shortcuts
+
+### Navigation
+
+```bash
+# Agent Switching
+Cmd+[              # Previous agent
+Cmd+]              # Next agent
+Alt+Cmd+1-0        # Jump to agent 1-10 (0 = 10th)
+
+# History Navigation
+Cmd+Shift+,        # Navigate back
+Cmd+Shift+.        # Navigate forward
+
+# Focus Management
+Cmd+.              # Toggle input/output focus
+Cmd+Shift+A        # Focus Left Bar (agent list)
+Cmd+Shift+F        # Focus Files tab
+Cmd+Shift+H        # Focus History tab
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:14-42`
+
+### Agent Management
+
+<Tabs>
+  <Tab title="Creating">
+    ```bash
+    Cmd+N              # New agent (quick create)
+    Cmd+Shift+N        # New agent wizard (guided setup)
+    Alt+Cmd+C          # New group chat
+    ```
+  </Tab>
+  
+  <Tab title="Organizing">
+    ```bash
+    Cmd+Shift+M        # Move agent to group
+    Cmd+Shift+B        # Toggle bookmark
+    Cmd+Shift+S        # Toggle tab star
+    ```
+  </Tab>
+  
+  <Tab title="Deleting">
+    ```bash
+    Cmd+Shift+Backspace # Remove agent (with confirmation)
+    ```
+  </Tab>
+</Tabs>
+
+### Tab Management (AI Mode)
+
+```bash
+# Tab Operations
+Cmd+T              # New tab
+Cmd+W              # Close current tab
+Cmd+Shift+T        # Reopen closed tab
+Cmd+Shift+W        # Close all tabs
+Alt+Cmd+W          # Close other tabs
+
+# Tab Navigation
+Cmd+Shift+]        # Next tab
+Cmd+Shift+[        # Previous tab
+Cmd+1-9            # Jump to tab 1-9
+Cmd+0              # Jump to last tab
+Alt+Cmd+T          # Tab switcher modal
+
+# Tab Management
+Cmd+Shift+R        # Rename tab
+Cmd+U              # Filter unread tabs
+Cmd+Shift+U        # Toggle tab unread
+```
+
+**Full tab shortcuts**: `src/renderer/constants/shortcuts.ts:125-178`
+
+### Panel Toggles
+
+```bash
+# Left Bar (Agent List)
+Alt+Meta+ArrowLeft # Toggle Left Bar
+Cmd+Shift+A        # Focus Left Bar
+
+# Right Bar (Files/History/Auto Run)
+Alt+Meta+ArrowRight # Toggle Right Bar
+Cmd+Shift+F        # Go to Files tab
+Cmd+Shift+H        # Go to History tab
+Cmd+Shift+1        # Go to Auto Run tab
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:4-29`
+
+## Git & Version Control
+
+```bash
+# Diff & Logs
+Cmd+Shift+D        # View git diff
+Cmd+Shift+G        # View git log
+
+# File Preview
+Cmd+P              # Copy file path (in preview)
+Cmd+E              # Toggle edit/preview mode
+Cmd+ArrowLeft      # File preview: Go back
+Cmd+ArrowRight     # File preview: Go forward
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:43-44, 112-121`
+
+## Search & Filter
+
+Maestro uses **context-aware search**: `Cmd+F` adapts based on what you're viewing.
+
+<AccordionGroup>
+  <Accordion title="Main Window Search">
+    ```bash
+    Cmd+F              # Search AI output or terminal history
+    ```
+    
+    **Context**: When focused on main panel, searches the active conversation or terminal output.
+    
+    **Source**: `src/renderer/constants/shortcuts.ts:102-106`
+  </Accordion>
+  
+  <Accordion title="File Explorer Filter">
+    ```bash
+    Cmd+F              # Filter files (in Files tab)
+    Cmd+G              # Fuzzy file search
+    ```
+    
+    **Context**: When Files tab is active, opens file tree filter.
+    
+    **Source**: `src/renderer/constants/shortcuts.ts:90`
+  </Accordion>
+  
+  <Accordion title="Session Filter">
+    ```bash
+    Cmd+F              # Filter sessions (in Left Bar)
+    ```
+    
+    **Context**: When Left Bar is focused, filters agent list.
+    
+    **Source**: `src/renderer/constants/shortcuts.ts:91-95`
+  </Accordion>
+  
+  <Accordion title="History Search">
+    ```bash
+    Cmd+F              # Filter history (in History tab)
+    ```
+    
+    **Context**: When History tab is active, searches conversation history.
+    
+    **Source**: `src/renderer/constants/shortcuts.ts:96-100`
+  </Accordion>
+</AccordionGroup>
+
+## Mode Switching
+
+```bash
+# Input Mode
+Cmd+J              # Switch between AI/Shell mode
+
+# Read-Only Mode (per tab)
+Cmd+R              # Toggle read-only mode
+
+# Save to History
+Cmd+S              # Toggle save to history
+
+# Thinking Display
+Cmd+Shift+K        # Toggle show thinking
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:22, 147-160`
+
+## Quick Actions
+
+The Quick Actions modal (`Cmd+K`) provides fuzzy search over all Maestro features:
+
+```bash
+Cmd+K              # Open Quick Actions
+```
+
+**Available Actions**:
+- Open settings
+- Create new agent
+- Toggle panels
+- View git diff/log
+- Launch wizards
+- System monitors
+- And more...
+
+**Modal**: `src/renderer/components/QuickActionsModal.tsx`
+
+## Advanced Features
+
+### System Monitors
+
+```bash
+Cmd+Shift+L        # View agent sessions
+Alt+Cmd+L          # System log viewer
+Alt+Cmd+P          # Process monitor
+Alt+Cmd+U          # Usage dashboard
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:45-56`
+
+### Auto Run
+
+```bash
+Cmd+Shift+1        # Go to Auto Run tab
+Cmd+Shift+E        # Toggle Auto Run expanded view
+Alt+Cmd+S          # Toggle auto-scroll
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:29, 36-40, 71-75`
+
+### Special Modals
+
+```bash
+Cmd+,              # Open settings
+Alt+Cmd+,          # Open agent settings
+Cmd+/              # Show shortcuts help
+Cmd+Shift+P        # Open prompt composer
+Cmd+Shift+Y        # Maestro Symphony
+Cmd+Shift+O        # Director's Notes
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:24-26, 62-80`
+
+### Output Navigation
+
+```bash
+Cmd+Shift+J        # Jump to bottom of output
+Cmd+Y              # Open image carousel
+```
+
+**Source**: `src/renderer/constants/shortcuts.ts:57-60`
+
+## Customizing Shortcuts
+
+All configurable shortcuts can be edited in **Settings → Keyboard Shortcuts**.
+
+<Steps>
+  <Step title="Open Settings">
+    Press `Cmd+,` to open the Settings modal.
+  </Step>
+  
+  <Step title="Navigate to Shortcuts">
+    Click the **Keyboard Shortcuts** tab.
+  </Step>
+  
+  <Step title="Edit a Shortcut">
+    Click any shortcut row to record a new key combination.
+  </Step>
+  
+  <Step title="Reset to Defaults">
+    Click **Reset All** to restore default shortcuts.
+  </Step>
+</Steps>
+
+**Component**: `src/renderer/components/ShortcutEditor.tsx`
+
+### Non-Editable Shortcuts
+
+Some shortcuts are **fixed** and cannot be customized:
+
+```typescript
+// From src/renderer/constants/shortcuts.ts:84-122
+export const FIXED_SHORTCUTS: Record<string, Shortcut> = {
+  jumpToSession: {
+    label: 'Jump to Session (1-9, 0=10th)',
+    keys: ['Alt', 'Meta', '1-0'],
+  },
+  filterFiles: {
+    label: 'Filter Files (in Files tab)',
+    keys: ['Meta', 'f'],
+  },
+  // ... context-aware Cmd+F shortcuts
+}
+```
+
+These are **context-aware** and adapt based on UI state.
+
+## Shortcut Format
+
+Shortcuts are defined in a structured format:
+
+```typescript
+// From src/renderer/constants/shortcuts.ts:1-81
+export const DEFAULT_SHORTCUTS: Record<string, Shortcut> = {
+  toggleSidebar: {
+    id: 'toggleSidebar',
+    label: 'Toggle Left Panel',
+    keys: ['Alt', 'Meta', 'ArrowLeft'],
+  },
+  // ...
+}
+```
+
+**Key Modifiers**:
+- `Meta` = `Cmd` on macOS, `Ctrl` on Windows/Linux
+- `Alt` = `Option` on macOS
+- `Shift` = Shift key
+
+**Formatting**: `src/renderer/utils/shortcutFormatter.ts`
+
+## Platform Differences
+
+Maestro adapts shortcuts for each platform:
+
+| Modifier | macOS | Windows/Linux |
+|----------|-------|---------------|
+| `Meta` | `Cmd` | `Ctrl` |
+| `Alt` | `Option` | `Alt` |
+| `Shift` | `Shift` | `Shift` |
+
+<Warning>
+  Some shortcuts may conflict with OS-level bindings on Linux. Check **Settings → Keyboard Shortcuts** to customize.
+</Warning>
+
+## Tips for Keyboard Efficiency
+
+<AccordionGroup>
+  <Accordion title="Learn Incrementally">
+    Start with these 5 shortcuts:
+    
+    1. `Cmd+K` - Quick Actions (discover features)
+    2. `Cmd+J` - Toggle AI/Terminal
+    3. `Cmd+[` / `Cmd+]` - Switch agents
+    4. `Cmd+T` - New tab
+    5. `Cmd+/` - View all shortcuts
+  </Accordion>
+  
+  <Accordion title="Use Quick Actions">
+    Don't memorize every shortcut. Press `Cmd+K` and type what you want to do. Quick Actions shows the associated keyboard shortcut for future reference.
+  </Accordion>
+  
+  <Accordion title="Context-Aware Cmd+F">
+    `Cmd+F` works everywhere but does different things based on context. Learn to use it reflexively:
+    
+    - Main window → Search output
+    - Files tab → Filter files
+    - Left Bar → Filter agents
+    - History tab → Search history
+  </Accordion>
+  
+  <Accordion title="Focus Management">
+    Master `Cmd+.` to toggle between input and output. This lets you scroll output with keyboard (arrow keys, Page Up/Down) without leaving the keyboard.
+  </Accordion>
+</AccordionGroup>
+
+## Complete Shortcut List
+
+View the **full shortcut reference** by pressing `Cmd+/` or visiting:
+
+**Settings → Keyboard Shortcuts**
+
+The shortcuts help modal groups shortcuts by category:
+
+- **Global** - App-wide shortcuts
+- **Navigation** - Agent and tab switching
+- **Panels** - Toggle sidebars and views
+- **Git** - Version control shortcuts
+- **Auto Run** - Batch processing
+- **System** - Monitors and logs
+- **Tab Management** - AI tab operations
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Agent Management" icon="users" href="/core/agent-management">
+    Learn multi-agent orchestration
+  </Card>
+  <Card title="Dual-Mode Sessions" icon="toggle-on" href="/core/dual-mode-sessions">
+    Switch between AI and terminal
+  </Card>
+  <Card title="Output Filtering" icon="filter" href="/core/output-filtering">
+    Search and filter output efficiently
+  </Card>
+  <Card title="Git Integration" icon="git-branch" href="/core/git-integration">
+    Version control workflows
+  </Card>
+</CardGroup>

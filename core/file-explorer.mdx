@@ -1,0 +1,440 @@
+---
+title: File Explorer & @-Mentions
+description: Browse files with git status indicators and reference them in AI prompts using @-mentions
+---
+
+Maestro's **File Explorer** provides a keyboard-navigable file tree with git integration and a powerful **@-mention** system for referencing files in AI conversations.
+
+## Opening the File Explorer
+
+The File Explorer lives in the **Right Bar** on the **Files** tab.
+
+<Tabs>
+  <Tab title="Keyboard">
+    ```bash
+    Cmd+Shift+F        # Go to Files tab
+    Alt+Meta+ArrowRight # Toggle Right Bar
+    ```
+    
+    **Shortcuts**: `src/renderer/constants/shortcuts.ts:27, 9-13`
+  </Tab>
+  
+  <Tab title="Mouse">
+    Click the **Files** tab in the Right Bar header.
+  </Tab>
+</Tabs>
+
+**Component**: `src/renderer/components/FileExplorerPanel.tsx`
+
+## File Tree Features
+
+### Git Status Indicators
+
+Files display color-coded status badges:
+
+| Badge | Status | Color | Description |
+|-------|--------|-------|-------------|
+| **M** | Modified | Orange | File has uncommitted changes |
+| **A** | Added | Green | File is newly added (staged) |
+| **D** | Deleted | Red | File is deleted (staged) |
+| **?** | Untracked | Gray | File is not tracked by git |
+| **C** | Conflicted | Red | File has merge conflicts |
+
+**Context Provider**: `src/renderer/contexts/GitStatusContext.tsx`
+
+### File Icons
+
+Files show extension-specific icons with theme-aware colors:
+
+```typescript
+// Extension color mapping
+const extensionColors = {
+  '.ts': 'blue',
+  '.tsx': 'blue',
+  '.js': 'blue',
+  '.jsx': 'blue',
+  '.md': 'green',
+  '.json': 'amber',
+  '.css': 'purple',
+  '.py': 'teal',
+  '.rs': 'rust',
+  '.go': 'cyan',
+  // ...
+};
+```
+
+**Badge Colors**: Support light/dark themes and colorblind-safe palettes.
+
+### Folder Expansion
+
+<Steps>
+  <Step title="Click to Toggle">
+    Click folder icons or names to expand/collapse.
+  </Step>
+  
+  <Step title="Keyboard Navigation">
+    Use arrow keys:
+    
+    - `→` Expand folder
+    - `←` Collapse folder
+    - `↑/↓` Navigate up/down
+    - `Enter` Open selected file
+  </Step>
+  
+  <Step title="Expand/Collapse All">
+    Right-click in the file tree:
+    
+    - **Expand All** - Open all folders
+    - **Collapse All** - Close all folders
+    
+    **Handlers**: `src/renderer/components/RightPanel.tsx:59-67`
+  </Step>
+</Steps>
+
+### Hidden Files
+
+Toggle hidden file visibility:
+
+**Settings → Interface → Show Hidden Files**
+
+When disabled, files matching these patterns are hidden:
+
+- `.*` (dotfiles)
+- `node_modules/`
+- `dist/`, `build/`, `out/`
+- `__pycache__/`
+- `.git/`
+
+**Setting**: `src/renderer/hooks/useSettings.ts` → `showHiddenFiles`
+
+## Filtering Files
+
+Quickly find files with fuzzy search:
+
+<Tabs>
+  <Tab title="Filter Files (Cmd+F)">
+    When the Files tab is focused, press `Cmd+F` to filter the visible tree:
+    
+    ```bash
+    Cmd+F              # Filter files (in Files tab)
+    ```
+    
+    **Features**:
+    - Case-insensitive search
+    - Matches anywhere in path
+    - Real-time filtering
+    - Highlights matches
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:90`
+  </Tab>
+  
+  <Tab title="Fuzzy File Search (Cmd+G)">
+    Global fuzzy file search across entire project:
+    
+    ```bash
+    Cmd+G              # Fuzzy file search
+    ```
+    
+    Opens a modal with:
+    - Fuzzy matching algorithm
+    - Keyboard navigation
+    - Instant preview
+    - Recently opened files at top
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:68`
+  </Tab>
+</Tabs>
+
+## @-Mention System
+
+Reference files directly in AI prompts using **@-mentions**:
+
+### How It Works
+
+<Steps>
+  <Step title="Type @ in AI Mode">
+    In the input field (AI mode), type `@` to trigger autocomplete.
+  </Step>
+  
+  <Step title="Select File">
+    Navigate suggestions with arrow keys:
+    
+    - `↑/↓` Navigate up/down
+    - `Enter` Select file
+    - `Esc` Cancel autocomplete
+    
+    **Hook**: `src/renderer/hooks/useAtMentionCompletion.ts`
+  </Step>
+  
+  <Step title="File Path Inserted">
+    The file path is inserted into your prompt:
+    
+    ```
+    @src/components/Header.tsx can you add a search bar?
+    ```
+  </Step>
+  
+  <Step title="AI Receives Context">
+    The AI agent receives the file path and can read its contents for context-aware responses.
+  </Step>
+</Steps>
+
+### @-Mention Features
+
+<AccordionGroup>
+  <Accordion title="Fuzzy Matching">
+    Type partial paths and get intelligent matches:
+    
+    ```
+    @hdr        → Header.tsx
+    @comp/hdr   → components/Header.tsx
+    @src/u/fmt  → src/utils/formatter.ts
+    ```
+  </Accordion>
+  
+  <Accordion title="File Type Icons">
+    Autocomplete shows file extension badges:
+    
+    - **TypeScript**: Blue badge
+    - **Markdown**: Green badge
+    - **JSON**: Amber badge
+    - **CSS**: Purple badge
+  </Accordion>
+  
+  <Accordion title="Git Status">
+    Modified files show their git status in autocomplete:
+    
+    - **M** for modified files (more likely to be relevant)
+    - **A** for added files
+    - **?** for untracked files
+  </Accordion>
+  
+  <Accordion title="Folder @-Mentions">
+    Reference entire directories:
+    
+    ```
+    @src/components/ review all files in this folder
+    ```
+    
+    The AI sees the folder structure and can analyze multiple files.
+  </Accordion>
+</AccordionGroup>
+
+### @-Mention Interface
+
+```typescript
+// @-mention suggestion type
+interface AtMentionSuggestion {
+  value: string;           // Full path
+  type: 'file' | 'folder'; // File or directory
+  extension?: string;      // File extension (e.g., '.tsx')
+  gitStatus?: string;      // Git status ('M', 'A', '?', etc.)
+}
+```
+
+**Source**: `src/renderer/components/MainPanel.tsx:96-100`
+
+## File Preview
+
+Double-click files to open them in **File Preview** tabs:
+
+### Preview Features
+
+<Tabs>
+  <Tab title="Syntax Highlighting">
+    Code files render with full syntax highlighting:
+    
+    - 100+ languages supported
+    - Theme-aware colors
+    - Line numbers
+    - Copy code button
+    
+    **Library**: Prism.js with custom themes
+  </Tab>
+  
+  <Tab title="Edit Mode">
+    Toggle edit mode to modify files:
+    
+    ```bash
+    Cmd+E              # Toggle edit/preview mode
+    ```
+    
+    **Features**:
+    - Live editing
+    - Auto-save (with confirmation)
+    - Unsaved changes indicator
+    - Undo/redo
+    
+    **Component**: `src/renderer/components/FilePreview.tsx`
+  </Tab>
+  
+  <Tab title="Search in File">
+    Search within the open file:
+    
+    ```bash
+    Cmd+F              # Search in file
+    ```
+    
+    - Regex support
+    - Case-sensitive toggle
+    - Match count
+    - Jump to next/prev
+  </Tab>
+  
+  <Tab title="Copy Path">
+    Copy file path to clipboard:
+    
+    ```bash
+    Cmd+P              # Copy file path (in preview)
+    ```
+    
+    **Shortcut**: `src/renderer/constants/shortcuts.ts:30`
+  </Tab>
+</Tabs>
+
+### File Preview Tabs
+
+File previews open as tabs alongside AI tabs:
+
+```typescript
+interface FilePreviewTab {
+  id: string;              // Unique tab ID
+  path: string;            // Full file path
+  name: string;            // Filename (without extension)
+  extension: string;       // File extension (e.g., '.tsx')
+  content: string;         // File content
+  scrollTop: number;       // Preserved scroll position
+  searchQuery: string;     // Preserved search query
+  editMode: boolean;       // Edit/preview toggle state
+  editContent?: string;    // Unsaved changes
+}
+```
+
+**Tab System**: `src/renderer/utils/tabHelpers.ts`
+
+## File Operations
+
+### Context Menu
+
+Right-click any file for operations:
+
+- **Open in Preview** - Open in tab
+- **@-Mention** - Insert reference in prompt
+- **Copy Path** - Copy full path
+- **Copy Relative Path** - Copy workspace-relative path
+- **Reveal in Finder** - Show in file manager
+- **Open in External Editor** - Open in default app
+
+**Menu**: `src/renderer/components/FileExplorerPanel.tsx`
+
+### Drag and Drop (Planned)
+
+Future: Drag files from explorer into input field to create @-mentions.
+
+## File Tree Refresh
+
+Refresh file tree to see new files:
+
+<Tabs>
+  <Tab title="Auto-Refresh">
+    Enable auto-refresh in File Explorer settings:
+    
+    **Right Bar → Files → ⚙️ → Auto-refresh interval**
+    
+    Options: 5s, 10s, 30s, 60s, or disabled.
+  </Tab>
+  
+  <Tab title="Manual Refresh">
+    Click the refresh icon in the Files tab header.
+    
+    **Handler**: `onAutoRunRefresh` from `useAutoRunHandlers`
+  </Tab>
+</Tabs>
+
+**Refresh Handler**: `src/renderer/hooks/useFileTreeManagement.ts:refreshFileTree()`
+
+## SSH Remote Files
+
+When an agent uses SSH remote execution, file operations work transparently:
+
+```typescript
+// SSH config in session
+sshRemoteConfig?: {
+  enabled: boolean;
+  host: string;
+  port: number;
+  username: string;
+  // ...
+}
+```
+
+**Features**:
+- File tree shows remote files
+- @-mentions work with remote paths
+- File preview loads remote content
+- Edit mode saves to remote host
+
+**SSH Wrapper**: `src/main/utils/ssh-spawn-wrapper.ts`
+
+<Warning>
+  When implementing file features, always support SSH remote execution using `wrapSpawnWithSsh()`.
+</Warning>
+
+## File Tree State Persistence
+
+Your file tree state persists across sessions:
+
+### Saved State
+
+- **Expanded folders** - Which folders are open
+- **Scroll position** - Where you scrolled to
+- **Filter query** - Last search term
+- **Hidden files toggle** - Show/hide setting
+
+**Storage**: Saved per agent in `maestro-sessions.json`
+
+```typescript
+// Session interface
+interface Session {
+  expandedFolders: Set<string>;  // Expanded folder paths
+  // ...
+}
+```
+
+## Keyboard Shortcuts
+
+```bash
+# Files Tab
+Cmd+Shift+F        # Go to Files tab
+Cmd+F              # Filter files (when Files tab focused)
+Cmd+G              # Fuzzy file search
+
+# In File Tree
+↑/↓                # Navigate files
+→                  # Expand folder
+←                  # Collapse folder
+Enter              # Open selected file
+
+# File Preview
+Cmd+E              # Toggle edit/preview mode
+Cmd+P              # Copy file path
+Cmd+F              # Search in file
+Cmd+W              # Close file tab
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Git Integration" icon="git-branch" href="/core/git-integration">
+    Git status indicators and diff viewer
+  </Card>
+  <Card title="Output Filtering" icon="filter" href="/core/output-filtering">
+    Search and filter AI responses
+  </Card>
+  <Card title="Dual-Mode Sessions" icon="toggle-on" href="/core/dual-mode-sessions">
+    Switch between AI and terminal
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Complete keyboard reference
+  </Card>
+</CardGroup>

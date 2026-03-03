@@ -1,0 +1,361 @@
+---
+title: "Claude Code Integration"
+description: "Anthropic's Claude Code AI coding assistant integration with Maestro"
+icon: "robot"
+---
+
+Claude Code is Anthropic's flagship AI coding assistant, fully integrated with Maestro for powerful collaborative development.
+
+## Overview
+
+Claude Code (`claude`) provides intelligent code generation, debugging, and refactoring capabilities with deep codebase understanding.
+
+<Info>
+Claude Code is the most feature-complete agent in Maestro, supporting session resume, plan mode, image input, and comprehensive usage statistics.
+</Info>
+
+## Installation
+
+<Steps>
+  <Step title="Install Claude Code">
+    Install via npm:
+    
+    ```bash
+    npm install -g @anthropic-ai/claude-code
+    ```
+  </Step>
+  
+  <Step title="Authenticate">
+    Run Claude Code once to authenticate:
+    
+    ```bash
+    claude
+    ```
+    
+    Follow the prompts to sign in with your Anthropic account.
+  </Step>
+  
+  <Step title="Verify in Maestro">
+    Launch Maestro and create a new session with **Claude Code** as the agent type.
+  </Step>
+</Steps>
+
+## Capabilities
+
+Claude Code provides the most comprehensive feature set of any Maestro-supported agent:
+
+<ParamField path="supportsResume" type="boolean" default="true">
+  Resume existing sessions with `--resume` flag
+</ParamField>
+
+<ParamField path="supportsReadOnlyMode" type="boolean" default="true">
+  Plan mode with `--permission-mode plan` (read-only access)
+</ParamField>
+
+<ParamField path="supportsJsonOutput" type="boolean" default="true">
+  Structured JSON output with `--output-format stream-json`
+</ParamField>
+
+<ParamField path="supportsSessionId" type="boolean" default="true">
+  Persistent session IDs for conversation continuity
+</ParamField>
+
+<ParamField path="supportsImageInput" type="boolean" default="true">
+  Attach screenshots, diagrams, and images
+</ParamField>
+
+<ParamField path="supportsImageInputOnResume" type="boolean" default="true">
+  Send images via `--input-format stream-json` on resumed sessions
+</ParamField>
+
+<ParamField path="supportsSlashCommands" type="boolean" default="true">
+  Built-in commands like `/help`, `/compact`, `/reset`
+</ParamField>
+
+<ParamField path="supportsSessionStorage" type="boolean" default="true">
+  Session history stored in `~/.claude/projects/`
+</ParamField>
+
+<ParamField path="supportsCostTracking" type="boolean" default="true">
+  Real-time cost information in USD
+</ParamField>
+
+<ParamField path="supportsUsageStats" type="boolean" default="true">
+  Token counts for input and output
+</ParamField>
+
+<ParamField path="supportsThinkingDisplay" type="boolean" default="true">
+  Streaming reasoning/thinking content
+</ParamField>
+
+<ParamField path="supportsContextMerge" type="boolean" default="true">
+  Receive merged context from other sessions
+</ParamField>
+
+<ParamField path="supportsContextExport" type="boolean" default="true">
+  Export conversation context for transfer
+</ParamField>
+
+Source: `src/main/agents/capabilities.ts:121`
+
+## Command-Line Arguments
+
+Maestro uses these base arguments for all Claude Code sessions:
+
+```bash
+claude --print --verbose --output-format stream-json --dangerously-skip-permissions
+```
+
+<ParamField path="--print" type="flag">
+  Run in batch/headless mode (no interactive TUI)
+</ParamField>
+
+<ParamField path="--verbose" type="flag">
+  Enable detailed logging output
+</ParamField>
+
+<ParamField path="--output-format" type="string" default="stream-json">
+  Output format for structured parsing
+</ParamField>
+
+<ParamField path="--dangerously-skip-permissions" type="flag">
+  Auto-approve all file operations (required by Maestro)
+</ParamField>
+
+### Resume Mode
+
+To resume an existing session:
+
+```bash
+claude --resume {sessionId} [additional args]
+```
+
+<ParamField path="--resume" type="string">
+  Claude session ID to resume
+</ParamField>
+
+### Plan Mode (Read-Only)
+
+For read-only analysis without file modifications:
+
+```bash
+claude --permission-mode plan [additional args]
+```
+
+<ParamField path="--permission-mode" type="string" default="plan">
+  Set to `plan` for read-only mode
+</ParamField>
+
+Source: `src/main/agents/definitions.ts:125`
+
+## Session Storage
+
+Claude Code stores session history in:
+
+```
+~/.claude/projects/{project-name}/{session-id}/
+```
+
+Each session directory contains:
+
+- `conversation.json` - Full conversation history
+- `metadata.json` - Session metadata and configuration
+- `files/` - Created/modified files during the session
+
+Maestro can import existing Claude sessions for seamless continuation.
+
+Source: `src/main/storage/claude-code-session-storage.ts`
+
+## Output Format
+
+Claude Code outputs newline-delimited JSON events:
+
+<CodeGroup>
+```json Init Event
+{
+  "type": "system",
+  "subtype": "init",
+  "session_id": "abc123",
+  "slash_commands": ["/help", "/compact", "/reset"]
+}
+```
+
+```json Thinking Event
+{
+  "type": "assistant",
+  "subtype": "thinking",
+  "text": "Let me analyze the codebase..."
+}
+```
+
+```json Tool Use
+{
+  "type": "tool_use",
+  "name": "write_file",
+  "input": {
+    "path": "example.js",
+    "content": "console.log('Hello');"
+  }
+}
+```
+
+```json Result
+{
+  "type": "result",
+  "text": "I've created the file example.js"
+}
+```
+
+```json Usage Stats
+{
+  "type": "usage",
+  "input_tokens": 1500,
+  "output_tokens": 800,
+  "cost_usd": 0.0234
+}
+```
+</CodeGroup>
+
+Source: `src/main/parsers/claude-code-parser.ts`
+
+## Slash Commands
+
+Claude Code supports these built-in commands:
+
+<AccordionGroup>
+  <Accordion title="/help">
+    Display available slash commands and usage information
+  </Accordion>
+  
+  <Accordion title="/compact">
+    Switch to compact output mode (less verbose)
+  </Accordion>
+  
+  <Accordion title="/reset">
+    Clear conversation history and start fresh
+  </Accordion>
+  
+  <Accordion title="/context">
+    Show current context window usage
+  </Accordion>
+</AccordionGroup>
+
+## Error Patterns
+
+Common error patterns Maestro detects:
+
+<ResponseField name="API_KEY_INVALID" type="error">
+  **Pattern**: `Invalid API key`
+  
+  **Solution**: Re-authenticate with `claude` command
+</ResponseField>
+
+<ResponseField name="RATE_LIMIT_EXCEEDED" type="error">
+  **Pattern**: `rate limit exceeded`
+  
+  **Solution**: Wait before retrying or upgrade your Anthropic plan
+</ResponseField>
+
+<ResponseField name="CONTEXT_LENGTH_EXCEEDED" type="error">
+  **Pattern**: `context length exceeded`
+  
+  **Solution**: Start a new session or use `/reset` to clear context
+</ResponseField>
+
+<ResponseField name="PERMISSION_DENIED" type="error">
+  **Pattern**: `permission denied`
+  
+  **Solution**: Check file permissions in working directory
+</ResponseField>
+
+Source: `src/main/parsers/error-patterns.ts`
+
+## Usage with Maestro Features
+
+<CardGroup cols={2}>
+  <Card title="Auto Run" icon="play">
+    Fully supported - Claude Code works with playbooks and automated workflows
+  </Card>
+  
+  <Card title="Group Chat" icon="users">
+    Participate in multi-agent group chats with other providers
+  </Card>
+  
+  <Card title="Context Grooming" icon="scissors">
+    Export and merge conversation context between sessions
+  </Card>
+  
+  <Card title="Session Discovery" icon="folder-tree">
+    Import existing Claude sessions from `~/.claude/projects/`
+  </Card>
+</CardGroup>
+
+## Context Window
+
+Claude Code uses Claude 3.5 Sonnet or Claude 4 models with:
+
+- **Context Window**: 200,000 tokens
+- **Output Limit**: ~8,000 tokens per response
+
+Source: `src/renderer/utils/contextUsage.ts:15`
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Descriptive Session Names">
+    Name sessions based on the task for easier identification in history
+  </Step>
+  
+  <Step title="Resume Instead of Restart">
+    Use session resume to maintain context and reduce token usage
+  </Step>
+  
+  <Step title="Enable Plan Mode for Analysis">
+    Use read-only mode when you only need code analysis without modifications
+  </Step>
+  
+  <Step title="Monitor Token Usage">
+    Check the usage dashboard to track costs and optimize prompts
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Claude Code not detected">
+    Verify installation:
+    ```bash
+    which claude
+    claude --version
+    ```
+    
+    If not found, reinstall:
+    ```bash
+    npm install -g @anthropic-ai/claude-code
+    ```
+  </Accordion>
+  
+  <Accordion title="Authentication failed">
+    Re-authenticate:
+    ```bash
+    claude logout
+    claude
+    ```
+  </Accordion>
+  
+  <Accordion title="Session resume fails">
+    Check session exists:
+    ```bash
+    ls ~/.claude/projects/
+    ```
+    
+    Session IDs are case-sensitive and must match exactly.
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+- [Claude Code Documentation](https://github.com/anthropics/claude-code)
+- [Agent Management](/core/agent-management)
+- [Session Discovery](/core/session-discovery)
+- [Auto Run Playbooks](/power/auto-run-playbooks)

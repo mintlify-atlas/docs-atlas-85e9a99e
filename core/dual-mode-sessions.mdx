@@ -1,0 +1,310 @@
+---
+title: Dual-Mode Sessions
+description: Seamlessly switch between AI Terminal and Command Terminal without restarting processes
+---
+
+Every Maestro agent runs **two processes simultaneously**: an AI assistant and a command-line terminal. You can switch between them instantly with a single keystroke.
+
+## The Two Modes
+
+<Tabs>
+  <Tab title="AI Terminal">
+    **Main Window in AI Mode**
+
+    When in AI mode, your input goes to the AI assistant. You can:
+
+    - Ask coding questions
+    - Request file edits
+    - Generate code
+    - Review changes
+    - Use AI-specific commands
+
+    The AI Terminal displays streaming responses with syntax highlighting and tool call cards.
+
+    **Component**: `src/renderer/components/MainPanel.tsx` (AI mode)
+  </Tab>
+  
+  <Tab title="Command Terminal">
+    **Main Window in Shell Mode**
+
+    When in terminal mode, your input goes directly to the shell (bash, zsh, fish, etc.). You can:
+
+    - Run git commands
+    - Execute build scripts
+    - Install dependencies
+    - Test your code
+    - Any standard terminal operation
+
+    The Command Terminal uses full PTY emulation with ANSI escape code support.
+
+    **Component**: `src/renderer/components/TerminalOutput.tsx`
+  </Tab>
+</Tabs>
+
+## Switching Modes
+
+### The Magic Keyboard Shortcut
+
+Press `Cmd+J` to toggle between AI and terminal modes instantly.
+
+```typescript
+// From src/renderer/constants/shortcuts.ts:22
+toggleMode: {
+  id: 'toggleMode',
+  label: 'Switch AI/Shell Mode',
+  keys: ['Meta', 'j']
+}
+```
+
+<Info>
+  **Why This Matters**: Both processes stay running. Switching modes just changes which process receives your input - no startup delays!
+</Info>
+
+## How It Works Internally
+
+### Dual-Process Architecture
+
+Each agent maintains two active processes:
+
+```typescript
+// From ARCHITECTURE.md - Session Interface
+interface Session {
+  id: string;
+  aiPid: number;           // AI agent process (e.g., claude-code)
+  terminalPid: number;     // Shell process (bash/zsh/fish)
+  inputMode: 'ai' | 'terminal';  // Current input target
+}
+```
+
+### Process Management
+
+**AI Processes**: Spawned via `child_process.spawn()` with `shell: false` for security.
+
+**Terminal Processes**: Spawned via `node-pty` with full shell emulation.
+
+**Source**: `src/main/process-manager.ts`
+
+### Input Routing
+
+When you type in the input field, Maestro routes your text based on `inputMode`:
+
+```typescript
+// Simplified routing logic
+if (session.inputMode === 'ai') {
+  processManager.write(session.aiPid, input);
+} else {
+  processManager.write(session.terminalPid, input);
+}
+```
+
+## Mode-Specific Features
+
+### AI Mode Features
+
+<AccordionGroup>
+  <Accordion title="Multi-Tab Support">
+    Create multiple AI conversation tabs within a single agent. Each tab can have its own provider session.
+
+    ```bash
+    Cmd+T     # New AI tab
+    Cmd+W     # Close current tab
+    Cmd+1-9   # Jump to tab 1-9
+    ```
+
+    **Interface**: `src/renderer/types/index.ts:AITab`
+  </Accordion>
+  
+  <Accordion title="@-Mentions for Files">
+    Reference files directly in your prompts:
+
+    ```
+    @src/components/Header.tsx can you add a search bar?
+    ```
+
+    Maestro auto-completes file paths as you type `@`.
+
+    **Hook**: `src/renderer/hooks/useAtMentionCompletion.ts`
+  </Accordion>
+  
+  <Accordion title="Read-Only Mode">
+    Toggle read-only mode per tab to prevent accidental writes:
+
+    ```bash
+    Cmd+R     # Toggle read-only mode
+    ```
+
+    Read-only operations can run in parallel without queueing.
+  </Accordion>
+  
+  <Accordion title="Tool Call Cards">
+    AI tool executions appear as interactive cards showing:
+
+    - Command executed
+    - Working directory
+    - Exit code
+    - Output preview
+
+    **Component**: `src/renderer/components/ToolCallCard.tsx`
+  </Accordion>
+</AccordionGroup>
+
+### Terminal Mode Features
+
+<AccordionGroup>
+  <Accordion title="Tab Completion">
+    Full shell tab completion support (files, commands, git branches).
+
+    **Hook**: `src/renderer/hooks/useTabCompletion.ts`
+  </Accordion>
+  
+  <Accordion title="Command History">
+    Navigate your command history with arrow keys:
+
+    - `↑` Previous command
+    - `↓` Next command
+    - `Cmd+F` Search history
+
+    History persists across sessions in `maestro-history.json`.
+  </Accordion>
+  
+  <Accordion title="ANSI Escape Codes">
+    Full support for terminal colors, cursor positioning, and text formatting.
+
+    **Filter**: `src/main/utils/terminalFilter.ts`
+  </Accordion>
+  
+  <Accordion title="PTY Resize">
+    Terminal auto-resizes when you change window dimensions.
+
+    ```typescript
+    // From process manager
+    processManager.resize(sessionId, cols, rows);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Mode Indicators
+
+The active mode is clearly indicated in the UI:
+
+### Visual Indicators
+
+1. **Tab Bar**: Shows "AI" or "Terminal" badge
+2. **Input Placeholder**: Changes based on mode
+   - AI: "Ask Claude Code..."
+   - Terminal: "$ command"
+3. **Right Panel**: Different content (Files/History in AI, output in terminal)
+
+### Status Icon
+
+The agent icon in the Left Bar shows current mode:
+
+- **AI Mode**: Wand icon (🪄)
+- **Terminal Mode**: Command prompt icon ($)
+
+## Custom AI Commands
+
+Define custom slash commands that work **only in AI mode**:
+
+```typescript
+// From Settings → Custom AI Commands
+{
+  command: '/review',
+  description: 'Review staged changes',
+  prompt: 'Review the staged git changes and provide feedback.',
+  aiOnly: true  // Only available in AI mode
+}
+```
+
+<Tip>
+  You can also create `terminalOnly: true` commands that only appear in terminal mode.
+</Tip>
+
+**Configuration**: Settings → Custom AI Commands
+
+## Smart Mode Switching
+
+### Context-Aware Defaults
+
+When you create a new agent, Maestro defaults to:
+
+- **AI Mode**: If the agent is an AI assistant (Claude Code, OpenCode, etc.)
+- **Terminal Mode**: If the agent is a plain terminal session
+
+### Mode Persistence
+
+Your mode choice persists across app restarts:
+
+```typescript
+// Session state includes inputMode
+inputMode: 'ai' | 'terminal'  // Saved to maestro-sessions.json
+```
+
+## Advanced: Mode-Specific Behavior
+
+### Enter-to-Send Settings
+
+Configure how the Enter key behaves in each mode:
+
+**Settings → Interface**
+
+- **AI Mode**: 
+  - `Enter` sends (default)
+  - `Shift+Enter` new line
+  - OR reverse this behavior
+
+- **Terminal Mode**:
+  - `Enter` always sends (standard shell behavior)
+
+**State**: `src/renderer/hooks/useSettings.ts`
+
+### Output Filtering
+
+Different search/filter capabilities per mode:
+
+| Feature | AI Mode | Terminal Mode |
+|---------|---------|---------------|
+| Search output | `Cmd+F` | `Cmd+F` |
+| Filter by regex | ✅ | ✅ |
+| Jump to bottom | `Cmd+Shift+J` | `Cmd+Shift+J` |
+| Auto-scroll | Toggle with `Alt+Cmd+S` | Always on |
+
+## Keyboard Shortcuts
+
+```bash
+# Mode Switching
+Cmd+J              # Toggle AI/Terminal mode
+
+# AI Mode Only
+Cmd+T              # New AI tab
+Cmd+W              # Close AI tab
+Cmd+R              # Toggle read-only mode
+Cmd+S              # Toggle save to history
+Cmd+Shift+K        # Toggle show thinking
+
+# Terminal Mode Only
+Ctrl+C             # Interrupt running command
+Cmd+K              # Clear terminal output
+
+# Both Modes
+Cmd+.              # Toggle input/output focus
+Cmd+Shift+J        # Jump to bottom
+Cmd+F              # Search output
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Master all keyboard shortcuts
+  </Card>
+  <Card title="Output Filtering" icon="filter" href="/core/output-filtering">
+    Search and filter AI responses
+  </Card>
+  <Card title="File Explorer" icon="folder" href="/core/file-explorer">
+    Browse files and use @-mentions
+  </Card>
+  <Card title="Git Integration" icon="git-branch" href="/core/git-integration">
+    Git features and diff viewer
+  </Card>
+</CardGroup>

@@ -1,122 +1,161 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Maestro",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#9b59b6",
+    "light": "#e8daef",
+    "dark": "#6c3483"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/RunMaestro/Maestro"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/RunMaestro/Maestro"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
+              "installation",
               "quickstart",
-              "development"
+              "features-overview"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "core/agent-management",
+              "core/dual-mode-sessions",
+              "core/keyboard-shortcuts",
+              "core/session-discovery",
+              "core/git-integration",
+              "core/file-explorer",
+              "core/output-filtering"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Power Features",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "power/git-worktrees",
+              "power/auto-run-playbooks",
+              "power/group-chat",
+              "power/mobile-remote",
+              "power/cli-tool",
+              "power/message-queueing"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Analytics",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "analytics/usage-dashboard",
+              "analytics/document-graph"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Guides",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Usage Guides",
             "pages": [
-              "api-reference/introduction"
+              "guides/general-usage",
+              "guides/context-management",
+              "guides/slash-commands",
+              "guides/ssh-remote-execution",
+              "guides/configuration",
+              "guides/themes"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Advanced",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "guides/playbook-creation",
+              "guides/custom-commands",
+              "guides/multi-provider-setup",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/overview",
+              "cli/commands",
+              "cli/automation",
+              "cli/scripting"
+            ]
+          },
+          {
+            "group": "Playbooks",
+            "pages": [
+              "cli/speckit-commands",
+              "cli/openspec-commands",
+              "cli/playbook-exchange"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API & Integration",
+        "groups": [
+          {
+            "group": "Integrations",
+            "pages": [
+              "api/mcp-server",
+              "api/web-server",
+              "api/tunnel-manager"
+            ]
+          },
+          {
+            "group": "Supported Providers",
+            "pages": [
+              "api/claude-code",
+              "api/openai-codex",
+              "api/opencode",
+              "api/factory-droid"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/architecture",
+              "reference/keyboard-shortcuts-full",
+              "reference/achievements",
+              "reference/performance-profiling",
+              "reference/changelog"
+            ]
+          },
+          {
+            "group": "Community",
+            "pages": [
+              "reference/contributing",
+              "reference/security",
+              "reference/support"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

@@ -1,0 +1,624 @@
+---
+title: Themes
+description: Customize Maestro's appearance with built-in themes or create your own custom theme
+---
+
+## Overview
+
+Maestro includes 17 carefully crafted themes across dark, light, and vibe categories. You can also create a fully custom theme with your own colors.
+
+## Theme System
+
+### Theme Structure
+
+```typescript
+interface Theme {
+  id: ThemeId;              // Unique theme identifier
+  name: string;             // Display name
+  mode: ThemeMode;          // 'dark' | 'light' | 'vibe'
+  colors: ThemeColors;      // Color palette
+}
+
+interface ThemeColors {
+  bgMain: string;           // Main background
+  bgSidebar: string;        // Sidebar background
+  bgActivity: string;       // Activity/hover background
+  border: string;           // Border color
+  textMain: string;         // Primary text
+  textDim: string;          // Secondary/dimmed text
+  accent: string;           // Accent color (primary)
+  accentDim: string;        // Accent dim (hover/disabled)
+  accentText: string;       // Accent text color
+  accentForeground: string; // Text on accent background
+  success: string;          // Success state (green)
+  warning: string;          // Warning state (yellow)
+  error: string;            // Error state (red)
+}
+```
+
+## Built-In Themes
+
+### Dark Themes
+
+<Tabs>
+  <Tab title="Dracula">
+    ```typescript
+    {
+      id: 'dracula',
+      name: 'Dracula',
+      mode: 'dark',
+      colors: {
+        bgMain: '#282a36',
+        bgSidebar: '#21222c',
+        bgActivity: '#343746',
+        border: '#44475a',
+        textMain: '#f8f8f2',
+        textDim: '#6272a4',
+        accent: '#bd93f9',
+        accentDim: 'rgba(189, 147, 249, 0.2)',
+        accentText: '#ff79c6',
+        accentForeground: '#282a36',
+        success: '#50fa7b',
+        warning: '#ffb86c',
+        error: '#ff5555'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Monokai">
+    ```typescript
+    {
+      id: 'monokai',
+      name: 'Monokai',
+      mode: 'dark',
+      colors: {
+        bgMain: '#272822',
+        bgSidebar: '#1e1f1c',
+        bgActivity: '#3e3d32',
+        border: '#49483e',
+        textMain: '#f8f8f2',
+        textDim: '#8f908a',
+        accent: '#fd971f',
+        accentDim: 'rgba(253, 151, 31, 0.2)',
+        accentText: '#fdbf6f',
+        accentForeground: '#1e1f1c',
+        success: '#a6e22e',
+        warning: '#e6db74',
+        error: '#f92672'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Nord">
+    ```typescript
+    {
+      id: 'nord',
+      name: 'Nord',
+      mode: 'dark',
+      colors: {
+        bgMain: '#2e3440',
+        bgSidebar: '#3b4252',
+        bgActivity: '#434c5e',
+        border: '#4c566a',
+        textMain: '#eceff4',
+        textDim: '#d8dee9',
+        accent: '#88c0d0',
+        accentDim: 'rgba(136, 192, 208, 0.2)',
+        accentText: '#8fbcbb',
+        accentForeground: '#2e3440',
+        success: '#a3be8c',
+        warning: '#ebcb8b',
+        error: '#bf616a'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Tokyo Night">
+    ```typescript
+    {
+      id: 'tokyo-night',
+      name: 'Tokyo Night',
+      mode: 'dark',
+      colors: {
+        bgMain: '#1a1b26',
+        bgSidebar: '#16161e',
+        bgActivity: '#24283b',
+        border: '#414868',
+        textMain: '#c0caf5',
+        textDim: '#9aa5ce',
+        accent: '#7aa2f7',
+        accentDim: 'rgba(122, 162, 247, 0.2)',
+        accentText: '#7dcfff',
+        accentForeground: '#1a1b26',
+        success: '#9ece6a',
+        warning: '#e0af68',
+        error: '#f7768e'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Catppuccin Mocha">
+    ```typescript
+    {
+      id: 'catppuccin-mocha',
+      name: 'Catppuccin Mocha',
+      mode: 'dark',
+      colors: {
+        bgMain: '#1e1e2e',
+        bgSidebar: '#181825',
+        bgActivity: '#313244',
+        border: '#45475a',
+        textMain: '#cdd6f4',
+        textDim: '#a6adc8',
+        accent: '#94e2d5',
+        accentDim: 'rgba(148, 226, 213, 0.2)',
+        accentText: '#f5e0dc',
+        accentForeground: '#1e1e2e',
+        success: '#a6e3a1',
+        warning: '#fab387',
+        error: '#f38ba8'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Gruvbox Dark">
+    ```typescript
+    {
+      id: 'gruvbox-dark',
+      name: 'Gruvbox Dark',
+      mode: 'dark',
+      colors: {
+        bgMain: '#282828',
+        bgSidebar: '#1d2021',
+        bgActivity: '#3c3836',
+        border: '#504945',
+        textMain: '#ebdbb2',
+        textDim: '#a89984',
+        accent: '#83a598',
+        accentDim: 'rgba(131, 165, 152, 0.2)',
+        accentText: '#8ec07c',
+        accentForeground: '#1d2021',
+        success: '#b8bb26',
+        warning: '#fabd2f',
+        error: '#fb4934'
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Light Themes
+
+<Tabs>
+  <Tab title="GitHub">
+    ```typescript
+    {
+      id: 'github-light',
+      name: 'GitHub',
+      mode: 'light',
+      colors: {
+        bgMain: '#ffffff',
+        bgSidebar: '#f6f8fa',
+        bgActivity: '#eff2f5',
+        border: '#d0d7de',
+        textMain: '#24292f',
+        textDim: '#57606a',
+        accent: '#0969da',
+        accentDim: 'rgba(9, 105, 218, 0.1)',
+        accentText: '#0969da',
+        accentForeground: '#ffffff',
+        success: '#1a7f37',
+        warning: '#9a6700',
+        error: '#cf222e'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Solarized">
+    ```typescript
+    {
+      id: 'solarized-light',
+      name: 'Solarized',
+      mode: 'light',
+      colors: {
+        bgMain: '#fdf6e3',
+        bgSidebar: '#eee8d5',
+        bgActivity: '#e6dfc8',
+        border: '#d3cbb7',
+        textMain: '#657b83',
+        textDim: '#93a1a1',
+        accent: '#2aa198',
+        accentDim: 'rgba(42, 161, 152, 0.1)',
+        accentText: '#2aa198',
+        accentForeground: '#fdf6e3',
+        success: '#859900',
+        warning: '#b58900',
+        error: '#dc322f'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="One Light">
+    ```typescript
+    {
+      id: 'one-light',
+      name: 'One Light',
+      mode: 'light',
+      colors: {
+        bgMain: '#fafafa',
+        bgSidebar: '#eaeaeb',
+        bgActivity: '#dbdbdc',
+        border: '#c8c8c9',
+        textMain: '#383a42',
+        textDim: '#696c77',
+        accent: '#a626a4',
+        accentDim: 'rgba(166, 38, 164, 0.1)',
+        accentText: '#0184bc',
+        accentForeground: '#ffffff',
+        success: '#50a14f',
+        warning: '#c18401',
+        error: '#e45649'
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Other Light Themes">
+    Additional light themes:
+    - **Gruvbox Light** - Warm light theme with retro groove
+    - **Catppuccin Latte** - Soothing pastel light theme
+    - **Ayu Light** - Bright and minimal light theme
+  </Tab>
+</Tabs>
+
+### Vibe Themes
+
+<Info>
+Vibe themes offer bold, unique color palettes for those who want something different.
+</Info>
+
+<Tabs>
+  <Tab title="Pedurple">
+    ```typescript
+    {
+      id: 'pedurple',
+      name: 'Pedurple',
+      mode: 'vibe',
+      colors: {
+        bgMain: '#1a0f24',
+        bgSidebar: '#140a1c',
+        bgActivity: '#2a1a3a',
+        border: '#4a2a6a',
+        textMain: '#e8d5f5',
+        textDim: '#b89fd0',
+        accent: '#ff69b4',
+        accentDim: 'rgba(255, 105, 180, 0.25)',
+        accentText: '#ff8dc7',
+        accentForeground: '#1a0f24',
+        success: '#7cb342',
+        warning: '#d4af37',
+        error: '#da70d6'
+      }
+    }
+    ```
+    
+    <Note>
+    Pedurple features a purple-pink aesthetic with hot pink accents.
+    </Note>
+  </Tab>
+  
+  <Tab title="Maestro's Choice">
+    ```typescript
+    {
+      id: 'maestros-choice',
+      name: "Maestro's Choice",
+      mode: 'vibe',
+      colors: {
+        bgMain: '#1a1a24',
+        bgSidebar: '#141420',
+        bgActivity: '#24243a',
+        border: '#3a3a5a',
+        textMain: '#fff8e8',
+        textDim: '#a8a0a0',
+        accent: '#f4c430',
+        accentDim: 'rgba(244, 196, 48, 0.25)',
+        accentText: '#ffd54f',
+        accentForeground: '#1a1a24',
+        success: '#66d9a0',
+        warning: '#f4c430',
+        error: '#e05070'
+      }
+    }
+    ```
+    
+    <Note>
+    Maestro's Choice features a sophisticated dark theme with gold accents.
+    </Note>
+  </Tab>
+  
+  <Tab title="Dre Synth">
+    ```typescript
+    {
+      id: 'dre-synth',
+      name: 'Dre Synth',
+      mode: 'vibe',
+      colors: {
+        bgMain: '#0d0221',
+        bgSidebar: '#0a0118',
+        bgActivity: '#150530',
+        border: '#00d4aa',
+        textMain: '#f0e6ff',
+        textDim: '#60e0d0',
+        accent: '#00ffcc',
+        accentDim: 'rgba(0, 255, 204, 0.25)',
+        accentText: '#40ffdd',
+        accentForeground: '#0d0221',
+        success: '#00ffcc',
+        warning: '#ff2a6d',
+        error: '#ff2a6d'
+      }
+    }
+    ```
+    
+    <Note>
+    Dre Synth features a cyberpunk synthwave aesthetic with neon cyan.
+    </Note>
+  </Tab>
+  
+  <Tab title="InQuest">
+    ```typescript
+    {
+      id: 'inquest',
+      name: 'InQuest',
+      mode: 'vibe',
+      colors: {
+        bgMain: '#0a0a0a',
+        bgSidebar: '#050505',
+        bgActivity: '#141414',
+        border: '#2a2a2a',
+        textMain: '#f5f5f5',
+        textDim: '#888888',
+        accent: '#cc0033',
+        accentDim: 'rgba(204, 0, 51, 0.25)',
+        accentText: '#ff3355',
+        accentForeground: '#ffffff',
+        success: '#f5f5f5',
+        warning: '#cc0033',
+        error: '#cc0033'
+      }
+    }
+    ```
+    
+    <Note>
+    InQuest features a stark black theme with bold red accents.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Switching Themes
+
+### Via Settings
+
+<Steps>
+  <Step title="Open Settings">
+    Press `Cmd+,` to open Settings.
+  </Step>
+  
+  <Step title="Navigate to Appearance">
+    Click on the "Appearance" tab.
+  </Step>
+  
+  <Step title="Select Theme">
+    Choose from the theme dropdown menu.
+  </Step>
+  
+  <Step title="Preview Changes">
+    Theme applies immediately for preview.
+  </Step>
+</Steps>
+
+### Via API
+
+```typescript
+import { useSettings } from './hooks';
+import type { ThemeId } from './types';
+
+const { activeThemeId, setActiveThemeId } = useSettings();
+
+// Switch to theme
+setActiveThemeId('tokyo-night' as ThemeId);
+```
+
+## Custom Theme
+
+<Warning>
+The Custom theme allows you to define your own color palette from scratch.
+</Warning>
+
+### Creating a Custom Theme
+
+<Steps>
+  <Step title="Select Custom Theme">
+    In Settings > Appearance, select "Custom" from the theme dropdown.
+  </Step>
+  
+  <Step title="Choose Base Theme">
+    Select a base theme to start from (all colors will be copied).
+  </Step>
+  
+  <Step title="Customize Colors">
+    Modify each color property:
+    - Background colors (main, sidebar, activity)
+    - Text colors (main, dim)
+    - Accent colors (primary, dim, text, foreground)
+    - State colors (success, warning, error)
+  </Step>
+  
+  <Step title="Preview Changes">
+    Changes apply in real-time as you edit.
+  </Step>
+</Steps>
+
+### Custom Theme Configuration
+
+```typescript
+const {
+  customThemeColors,      // Current custom colors
+  customThemeBaseId,      // Base theme ID
+  setCustomThemeColors,   // Update colors
+  setCustomThemeBaseId    // Change base
+} = useSettings();
+
+// Set custom colors
+setCustomThemeColors({
+  bgMain: '#1a1a2e',
+  bgSidebar: '#16213e',
+  bgActivity: '#0f3460',
+  border: '#533483',
+  textMain: '#e8e8e8',
+  textDim: '#a8a8a8',
+  accent: '#00adb5',
+  accentDim: 'rgba(0, 173, 181, 0.2)',
+  accentText: '#00d4aa',
+  accentForeground: '#1a1a2e',
+  success: '#4caf50',
+  warning: '#ff9800',
+  error: '#f44336'
+});
+```
+
+### Default Custom Theme
+
+```typescript
+// Custom theme defaults to Dracula colors
+export const DEFAULT_CUSTOM_THEME_COLORS = THEMES.dracula.colors;
+```
+
+## Theme Utilities
+
+### Get Theme by ID
+
+```typescript
+import { getThemeById } from './constants/themes';
+
+const theme = getThemeById('nord');
+if (theme) {
+  console.log(theme.name);    // 'Nord'
+  console.log(theme.mode);    // 'dark'
+  console.log(theme.colors);  // { bgMain: '#2e3440', ... }
+}
+```
+
+### Context Colors
+
+```typescript
+import { getContextColor } from './utils/theme';
+
+// Get agent state color from current theme
+const color = getContextColor('ready', currentTheme);
+// Returns: theme.colors.success (green)
+
+const busyColor = getContextColor('busy', currentTheme);
+// Returns: theme.colors.warning (yellow)
+
+const errorColor = getContextColor('error', currentTheme);
+// Returns: theme.colors.error (red)
+```
+
+## Color Blind Mode
+
+<Info>
+Maestro includes a colorblind mode that uses accessible color palettes.
+</Info>
+
+### Enable Colorblind Mode
+
+```typescript
+const { colorBlindMode, setColorBlindMode } = useSettings();
+
+// Enable colorblind-friendly colors
+setColorBlindMode(true);
+```
+
+When enabled, Maestro uses specially designed color palettes optimized for various types of color vision deficiency.
+
+## Theme Best Practices
+
+<Accordion title="Match Your Environment">
+  Choose themes that match your workspace:
+  
+  - **Bright rooms**: Light themes (GitHub, Solarized Light)
+  - **Dim rooms**: Dark themes (Tokyo Night, Nord)
+  - **Variable lighting**: Medium contrast (Gruvbox Dark, One Light)
+</Accordion>
+
+<Accordion title="Reduce Eye Strain">
+  For extended coding sessions:
+  
+  - Use lower contrast themes (Nord, Solarized)
+  - Avoid pure white backgrounds (#ffffff)
+  - Consider warm color temperatures (Gruvbox)
+  - Enable night mode/flux for evening work
+</Accordion>
+
+<Accordion title="Personal Expression">
+  Vibe themes are perfect for:
+  
+  - Streaming and demos (Dre Synth, Pedurple)
+  - Personal branding (Maestro's Choice)
+  - Standing out (InQuest)
+</Accordion>
+
+<Accordion title="Custom Theme Tips">
+  When creating custom themes:
+  
+  1. Start with a similar base theme
+  2. Adjust one aspect at a time (backgrounds, then text, then accents)
+  3. Test with real code/content
+  4. Ensure sufficient contrast (WCAG AA minimum: 4.5:1)
+  5. Test state colors (success/warning/error) for visibility
+</Accordion>
+
+## Sharing Custom Themes
+
+<Tip>
+Export your settings to share custom themes with others.
+</Tip>
+
+### Export Custom Theme
+
+1. Open Settings > Advanced
+2. Click "Export Settings"
+3. Extract custom theme from JSON:
+
+```json
+{
+  "activeThemeId": "custom",
+  "customThemeColors": {
+    "bgMain": "#1a1a2e",
+    "bgSidebar": "#16213e",
+    // ... rest of colors
+  },
+  "customThemeBaseId": "dracula"
+}
+```
+
+### Import Custom Theme
+
+1. Receive settings JSON with custom theme
+2. Open Settings > Advanced
+3. Click "Import Settings"
+4. Theme applies automatically if `activeThemeId` is "custom"
+
+## Next Steps
+
+- Explore [Configuration](/guides/configuration) for other appearance settings
+- Learn about [General Usage](/guides/general-usage) patterns
+- Review [Accessibility Settings](/guides/configuration#accessibility) for colorblind mode

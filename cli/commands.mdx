@@ -1,0 +1,607 @@
+---
+title: CLI Commands Reference
+description: Complete reference for all Maestro CLI commands, flags, and options
+---
+
+Complete command reference for `maestro-cli`. All commands support `--json` for machine-readable output.
+
+## Global Options
+
+<ParamField path="--version" type="flag">
+  Display CLI version number
+</ParamField>
+
+<ParamField path="--help" type="flag">
+  Show help information for any command
+</ParamField>
+
+## list
+
+Query and display Maestro resources.
+
+### list groups
+
+List all session groups.
+
+```bash
+maestro-cli list groups [--json]
+```
+
+<ParamField path="--json" type="boolean">
+  Output as JSON array instead of formatted table
+</ParamField>
+
+**Example Output (human-readable):**
+
+```
+GROUPS (2)
+
+  📁  Development Team
+      abc-def-ghi
+
+  📁  Production Agents
+      xyz-uvw-rst
+```
+
+**Example Output (JSON):**
+
+```json
+[
+  {
+    "id": "abc-def-ghi",
+    "name": "Development Team",
+    "emoji": "📁",
+    "collapsed": false
+  }
+]
+```
+
+### list agents
+
+List all agents, optionally filtered by group.
+
+```bash
+maestro-cli list agents [--group <id>] [--json]
+```
+
+<ParamField path="-g, --group" type="string">
+  Filter agents by group ID (supports partial ID matching)
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output as JSON array
+</ParamField>
+
+**Example:**
+
+```bash
+maestro-cli list agents --group abc
+```
+
+**Output:**
+
+```
+AGENTS in Development Team (3)
+
+  Backend Engineer claude-code [Auto Run]
+      /Users/dev/api-server
+      a1b2c3d4-e5f6-...
+
+  Frontend Dev codex
+      /Users/dev/web-app
+      f7g8h9i0-j1k2-...
+```
+
+**JSON Output:**
+
+```json
+[
+  {
+    "id": "a1b2c3d4-e5f6-...",
+    "name": "Backend Engineer",
+    "toolType": "claude-code",
+    "cwd": "/Users/dev/api-server",
+    "groupId": "abc-def-ghi",
+    "autoRunFolderPath": "/Users/dev/api-server/Auto Run Docs"
+  }
+]
+```
+
+### list playbooks
+
+List playbooks, optionally filtered by agent.
+
+```bash
+maestro-cli list playbooks [--agent <id>] [--json]
+```
+
+<ParamField path="-a, --agent" type="string">
+  Filter playbooks by agent ID (supports partial ID matching)
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output as JSON array
+</ParamField>
+
+**Example:**
+
+```bash
+maestro-cli list playbooks --agent a1b2c3
+```
+
+**Output:**
+
+```
+PLAYBOOKS for Backend Engineer (2)
+  📁 /Users/dev/api-server/Auto Run Docs
+
+  Auth System Implementation 3 docs ↻ loop (max 3) abc12345
+      • Phase-01-Setup.md
+      • Phase-02-Core.md ↺
+      • Phase-03-Tests.md
+
+  Database Migration 1 doc def67890
+      • Migration-Script.md
+```
+
+**Symbols:**
+- `↻` - Loop enabled
+- `↺` - Document resets on completion
+
+**Without `--agent` (all playbooks):**
+
+```bash
+maestro-cli list playbooks
+```
+
+Groups playbooks by agent:
+
+```
+PLAYBOOKS (5 across 3 agents)
+
+  Backend Engineer (2) a1b2c3d4
+      Auth System Implementation 3 docs ↻ abc12345
+      Database Migration 1 doc def67890
+
+  Frontend Dev (3) f7g8h9i0
+      UI Redesign 4 docs ↻ ghi34567
+      ...
+```
+
+### list sessions
+
+List agent sessions (conversation history) for a specific agent.
+
+```bash
+maestro-cli list sessions <agent-id> [options]
+```
+
+<ParamField path="agent-id" type="string" required>
+  Agent ID (supports partial matching)
+</ParamField>
+
+<ParamField path="-l, --limit" type="number" default="25">
+  Maximum number of sessions to show
+</ParamField>
+
+<ParamField path="-k, --skip" type="number" default="0">
+  Number of sessions to skip (for pagination)
+</ParamField>
+
+<ParamField path="-s, --search" type="string">
+  Filter sessions by keyword in name or first message
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output as JSON array
+</ParamField>
+
+**Example:**
+
+```bash
+maestro-cli list sessions a1b2c3 --limit 10 --search "authentication"
+```
+
+**Output:**
+
+```
+SESSIONS for Backend Engineer (2 matching of 47 total)
+
+  ★ Add JWT authentication 8 msgs $0.0234 2.5m
+      Mar 3, 2026 10:30 AM sess_abc123
+      Need to implement JWT token authentication for the API
+
+    Fix login validation 3 msgs $0.0089 45s
+      Mar 2, 2026 3:15 PM sess_def456
+      The login endpoint is not properly validating email format
+```
+
+**Symbols:**
+- `★` - Starred session
+- Cost in USD
+- Duration in human-readable format
+
+## show
+
+Display detailed information about a specific resource.
+
+### show agent
+
+Show agent details including usage statistics and recent history.
+
+```bash
+maestro-cli show agent <id> [--json]
+```
+
+<ParamField path="id" type="string" required>
+  Agent ID (supports partial matching)
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output as JSON object
+</ParamField>
+
+**Example:**
+
+```bash
+maestro-cli show agent a1b2c3
+```
+
+**Output:**
+
+```
+AGENT
+
+  Name:       Backend Engineer
+  ID:         a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6
+  Type:       claude-code
+  Directory:  /Users/dev/api-server
+  Group:      Development Team
+  Auto Run:   /Users/dev/api-server/Auto Run Docs
+
+USAGE STATS
+
+  Sessions:      47 total (42 success, 5 failed, 89% success rate)
+  Total Cost:    $12.3456
+  Total Time:    2.3h
+
+  Tokens:        Input: 1.2M  Output: 456.7K
+  Cache:         Read: 890.1K  Created: 234.5K
+
+RECENT HISTORY (last 10)
+
+  ✓ 03/03/26 10:30 [playbook] Completed Auth Phase 2 $0.0234 5.2m
+  ✓ 03/03/26 09:15 [send] Added error handling $0.0089 1.3m
+  ✗ 03/02/26 16:45 [playbook] Database migration failed $0.0012 45s
+  ...
+```
+
+### show playbook
+
+Show detailed information about a playbook.
+
+```bash
+maestro-cli show playbook <id> [--json]
+```
+
+<ParamField path="id" type="string" required>
+  Playbook ID (supports partial matching)
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output as JSON object with full task lists
+</ParamField>
+
+**Example:**
+
+```bash
+maestro-cli show playbook abc123
+```
+
+**Output:**
+
+```
+PLAYBOOK
+
+  Name:         Auth System Implementation
+  ID:           abc12345-...
+  Agent:        Backend Engineer (a1b2c3d4)
+  Folder:       /Users/dev/api-server/Auto Run Docs
+  Loop:         enabled (max 3)
+
+  Prompt:
+    You are implementing a secure authentication system.
+    Complete each task in the Auto Run documents.
+    Verify all changes work before marking tasks complete.
+
+  Documents: (3 files, 12 pending tasks)
+
+    📄 Phase-01-Setup.md (4 tasks)
+        1. Install jsonwebtoken and bcrypt packages
+        2. Create auth middleware directory structure
+        3. Set up environment variables for JWT secret
+        4. Create User model with password hashing
+
+    📄 Phase-02-Core.md (5 tasks) ↺ reset
+        1. Implement JWT token generation utility
+        2. Create login endpoint with validation
+        3. Add token verification middleware
+        4. Implement refresh token logic
+        5. Add logout endpoint
+
+    📄 Phase-03-Tests.md (3 tasks)
+        1. Write unit tests for auth utilities
+        ... and 2 more
+```
+
+## playbook
+
+Run a playbook in batch mode with autonomous execution.
+
+```bash
+maestro-cli playbook <playbook-id> [options]
+```
+
+<ParamField path="playbook-id" type="string" required>
+  Playbook ID (supports partial matching)
+</ParamField>
+
+<ParamField path="--dry-run" type="boolean">
+  Show what would be executed without running tasks
+</ParamField>
+
+<ParamField path="--no-history" type="boolean">
+  Do not write history entries (useful for testing)
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output JSONL event stream for scripting
+</ParamField>
+
+<ParamField path="--debug" type="boolean">
+  Show detailed debug output and configuration
+</ParamField>
+
+<ParamField path="--verbose" type="boolean">
+  Show full prompt sent to agent on each iteration
+</ParamField>
+
+<ParamField path="--wait" type="boolean">
+  Wait for agent to become available if busy (polls every 5 seconds)
+</ParamField>
+
+**Example (human-readable):**
+
+```bash
+maestro-cli playbook abc123
+```
+
+**Output:**
+
+```
+ℹ Running playbook: Auth System Implementation
+ℹ Agent: Backend Engineer
+ℹ Documents: 3
+ℹ Loop: enabled (max 3)
+
+[10:30:15] ▶ Starting playbook run
+[10:30:15] 📄 Phase-01-Setup.md (4 tasks)
+[10:30:15]    ⏳ Task 1: Install jsonwebtoken and bcrypt packages
+[10:30:28]       ✓ Installed packages and updated package.json (13.2s)
+[10:30:28]    ⏳ Task 2: Create auth middleware directory structure
+[10:30:35]       ✓ Created src/middleware/auth/ directory (7.1s)
+...
+[10:32:45] ✓ Document complete (4 tasks)
+[10:32:45] 📄 Phase-02-Core.md (5 tasks)
+...
+[10:35:20] ✓ Playbook complete (12 tasks in 290.5s)
+```
+
+**Example (JSONL):**
+
+```bash
+maestro-cli playbook abc123 --json
+```
+
+**Output Stream:**
+
+```json
+{"type":"start","timestamp":1709472000000}
+{"type":"document_start","document":"Phase-01-Setup.md","index":0,"taskCount":4}
+{"type":"task_start","document":"Phase-01-Setup.md","taskIndex":0}
+{"type":"task_complete","success":true,"summary":"Installed packages","elapsedMs":13200,"usageStats":{"inputTokens":1250,"outputTokens":450,"totalCostUsd":0.0034}}
+{"type":"document_complete","document":"Phase-01-Setup.md","tasksCompleted":4}
+{"type":"complete","success":true,"totalTasksCompleted":12,"totalElapsedMs":290500}
+```
+
+<Info>
+  See [Scripting with JSONL](/cli/scripting) for parsing examples and automation patterns.
+</Info>
+
+**Dry Run Example:**
+
+```bash
+maestro-cli playbook abc123 --dry-run
+```
+
+Shows execution plan without running:
+
+```
+[10:30:15]    1. Install jsonwebtoken and bcrypt packages
+[10:30:15]    2. Create auth middleware directory structure
+[10:30:15]    3. Set up environment variables for JWT secret
+...
+ℹ Dry run complete (12 tasks would be processed)
+```
+
+**Wait Mode:**
+
+```bash
+maestro-cli playbook abc123 --wait
+```
+
+If agent is busy:
+
+```
+⚠ Agent "Backend Engineer" is busy: Desktop app shows agent is busy
+ℹ Waiting for agent to become available...
+ℹ Agent available after waiting 2m 30s
+
+▶ Starting playbook run
+...
+```
+
+## send
+
+Send a message to an agent and get a JSON response. Perfect for one-off tasks and scripting.
+
+```bash
+maestro-cli send <agent-id> <message> [--session <id>]
+```
+
+<ParamField path="agent-id" type="string" required>
+  Agent ID (supports partial matching)
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Message to send to the agent (enclose in quotes)
+</ParamField>
+
+<ParamField path="-s, --session" type="string">
+  Resume an existing agent session ID for multi-turn conversations
+</ParamField>
+
+**Example (single message):**
+
+```bash
+maestro-cli send a1b2c3 "Add error handling to the login endpoint"
+```
+
+**Response:**
+
+```json
+{
+  "agentId": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+  "agentName": "Backend Engineer",
+  "sessionId": "sess_abc123xyz",
+  "response": "I've added comprehensive error handling to the login endpoint:\n\n1. Email validation\n2. Password strength checking\n3. Rate limiting\n4. Error response formatting\n\nThe changes are in src/routes/auth.ts:45",
+  "success": true,
+  "usage": {
+    "inputTokens": 1250,
+    "outputTokens": 890,
+    "cacheReadInputTokens": 4500,
+    "cacheCreationInputTokens": 0,
+    "totalCostUsd": 0.0045,
+    "contextWindow": 200000,
+    "contextUsagePercent": 3.2
+  }
+}
+```
+
+**Example (multi-turn conversation):**
+
+```bash
+# First message (creates session)
+RESPONSE=$(maestro-cli send a1b2c3 "Review the auth system")
+SESSION_ID=$(echo $RESPONSE | jq -r '.sessionId')
+
+# Follow-up messages (resume session)
+maestro-cli send a1b2c3 "Now add rate limiting" --session $SESSION_ID
+maestro-cli send a1b2c3 "Write tests for it" --session $SESSION_ID
+```
+
+<Warning>
+  The `send` command only supports `claude-code` and `codex` agent types. Other agent types will return an `AGENT_UNSUPPORTED` error.
+</Warning>
+
+**Error Responses:**
+
+```json
+{
+  "success": false,
+  "error": "Agent not found: xyz123",
+  "code": "AGENT_NOT_FOUND"
+}
+```
+
+**Error Codes:**
+- `AGENT_NOT_FOUND` - Invalid agent ID
+- `AGENT_UNSUPPORTED` - Agent type doesn't support CLI messaging
+- `CLAUDE_NOT_FOUND` - Claude Code CLI not installed
+- `CODEX_NOT_FOUND` - Codex CLI not installed
+
+## clean
+
+Maintenance commands for cleaning up orphaned resources.
+
+### clean playbooks
+
+Remove playbooks for deleted agents.
+
+```bash
+maestro-cli clean playbooks [--dry-run] [--json]
+```
+
+<ParamField path="--dry-run" type="boolean">
+  Show what would be removed without deleting
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output as JSON object
+</ParamField>
+
+**Example:**
+
+```bash
+maestro-cli clean playbooks --dry-run
+```
+
+**Output:**
+
+```
+✓ Found 2 orphaned playbooks:
+  - Auth System (abc123) - agent deleted
+  - Old Migration (def456) - agent deleted
+
+ℹ Use without --dry-run to remove these playbooks
+```
+
+## Exit Codes and Error Handling
+
+All commands follow standard Unix conventions:
+
+<CodeGroup>
+```bash Success
+$ maestro-cli list agents
+# Exit code: 0
+```
+
+```bash Error
+$ maestro-cli show agent invalid-id
+✗ Error: Agent not found: invalid-id
+# Exit code: 1
+```
+
+```bash JSON Error
+$ maestro-cli show agent invalid-id --json
+{"error":"Agent not found: invalid-id"}
+# Exit code: 1
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Automation Patterns" icon="robot" href="/cli/automation">
+    Workflows for CI/CD and batch automation
+  </Card>
+  <Card title="Scripting Guide" icon="code" href="/cli/scripting">
+    Parse JSONL output and build integrations
+  </Card>
+  <Card title="Spec-Kit Commands" icon="file-contract" href="/cli/speckit-commands">
+    Structured specification workflow
+  </Card>
+  <Card title="OpenSpec Commands" icon="git-alt" href="/cli/openspec-commands">
+    Change management system
+  </Card>
+</CardGroup>

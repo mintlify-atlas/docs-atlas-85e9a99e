@@ -1,0 +1,404 @@
+---
+title: "CLI Tool"
+description: "Command-line interface for automation and scripting with Maestro"
+---
+
+## Overview
+
+The Maestro CLI provides command-line access to agents, playbooks, and batch processing. Perfect for automation, CI/CD pipelines, and scripting.
+
+<Info>
+  The CLI shares the same configuration as the desktop app, accessing your agents and playbooks from `~/.maestro`.
+</Info>
+
+## Installation
+
+The CLI is included with Maestro:
+
+```bash
+# Check installation
+maestro-cli --version
+
+# View help
+maestro-cli --help
+```
+
+## Commands
+
+### List Resources
+
+View your agents, groups, playbooks, and sessions:
+
+<CodeGroup>
+```bash Groups
+# List all agent groups
+maestro-cli list groups
+
+# JSON output
+maestro-cli list groups --json
+```
+
+```bash Agents
+# List all agents
+maestro-cli list agents
+
+# Filter by group
+maestro-cli list agents --group <group-id>
+
+# JSON output
+maestro-cli list agents --json
+```
+
+```bash Playbooks
+# List all playbooks
+maestro-cli list playbooks
+
+# Filter by agent
+maestro-cli list playbooks --agent <agent-id>
+
+# JSON output  
+maestro-cli list playbooks --json
+```
+
+```bash Sessions
+# List agent sessions (most recent first)
+maestro-cli list sessions <agent-id>
+
+# Pagination
+maestro-cli list sessions <agent-id> --limit 50 --skip 25
+
+# Search
+maestro-cli list sessions <agent-id> --search "keyword"
+
+# JSON output
+maestro-cli list sessions <agent-id> --json
+```
+</CodeGroup>
+
+### Show Details
+
+Get detailed information about resources:
+
+<CodeGroup>
+```bash Agent
+# Show agent details and stats
+maestro-cli show agent <agent-id>
+
+# JSON output
+maestro-cli show agent <agent-id> --json
+```
+
+```bash Playbook  
+# Show playbook configuration
+maestro-cli show playbook <playbook-id>
+
+# JSON output
+maestro-cli show playbook <playbook-id> --json
+```
+</CodeGroup>
+
+### Run Playbook
+
+Execute saved playbooks:
+
+```bash
+# Run a playbook (supports partial IDs)
+maestro-cli playbook <playbook-id>
+
+# Options:
+--dry-run          # Preview without executing
+--no-history       # Skip history logging
+--json             # JSON output for parsing
+--debug            # Show debug information
+--verbose          # Show full prompts
+--wait             # Wait if agent is busy
+```
+
+<Note>
+  Playbook IDs support prefix matching. Use the first few characters if unambiguous.
+</Note>
+
+### Send Message
+
+Send a message to an agent:
+
+```bash
+# One-shot message
+maestro-cli send <agent-id> "Your message here"
+
+# Continue conversation
+maestro-cli send <agent-id> "Follow-up" --session <session-id>
+```
+
+### Clean Resources
+
+Remove orphaned data:
+
+```bash
+# Remove playbooks for deleted agents
+maestro-cli clean playbooks
+
+# Preview without deleting
+maestro-cli clean playbooks --dry-run
+
+# JSON output
+maestro-cli clean playbooks --json
+```
+
+## Output Formats
+
+### Human Readable
+
+Default format for terminal use:
+
+```bash
+maestro-cli list agents
+
+ID       Name          Provider      State
+abc123   My Agent      claude-code   ready
+def456   Test Agent    codex         busy
+ghi789   Remote Agent  opencode      ready
+```
+
+### JSON Lines
+
+Machine-readable output for scripting:
+
+```bash
+maestro-cli list agents --json
+
+{"id":"abc123","name":"My Agent","toolType":"claude-code","state":"ready"}
+{"id":"def456","name":"Test Agent","toolType":"codex","state":"busy"}
+{"id":"ghi789","name":"Remote Agent","toolType":"opencode","state":"ready"}
+```
+
+## Playbook Execution
+
+### Event Streaming
+
+Playbooks emit events during execution:
+
+```json
+{"type":"start","playbook":"Update Docs","documents":5,"timestamp":1234567890}
+{"type":"document_start","index":0,"name":"intro.md","timestamp":1234567891}
+{"type":"task_complete","task":"Update introduction","timestamp":1234567892}
+{"type":"document_complete","index":0,"duration":1250,"timestamp":1234567893}
+{"type":"loop_start","iteration":1,"timestamp":1234567894}
+{"type":"complete","totalDuration":5000,"timestamp":1234567895}
+```
+
+### Wait Mode
+
+Handle busy agents gracefully:
+
+<Tabs>
+  <Tab title="Fail Immediately">
+    ```bash
+    maestro-cli playbook abc123
+    
+    Error: Agent "My Agent" is busy: Running playbook "Other Task" from CLI (PID: 12345)
+    ```
+  </Tab>
+  
+  <Tab title="Wait for Availability">
+    ```bash
+    maestro-cli playbook abc123 --wait
+    
+    Warning: Agent "My Agent" is busy: Running playbook "Other Task"
+    Waiting for agent to become available...
+    Agent available after waiting 2m 15s
+    
+    Running playbook: Update Docs
+    ...
+    ```
+  </Tab>
+</Tabs>
+
+### Error Handling
+
+Properly handle errors in scripts:
+
+```bash
+#!/bin/bash
+
+set -e  # Exit on error
+
+# Run playbook
+if maestro-cli playbook abc123 --json > output.jsonl 2>&1; then
+  echo "Playbook completed successfully"
+  # Process results
+  jq -r 'select(.type=="complete") | .totalDuration' output.jsonl
+else
+  echo "Playbook failed"
+  # Extract error
+  jq -r 'select(.type=="error") | .message' output.jsonl
+  exit 1
+fi
+```
+
+## Integration Examples
+
+### CI/CD Pipeline
+
+```yaml .github/workflows/docs.yml
+name: Update Documentation
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Run documentation playbook
+        run: |
+          maestro-cli playbook doc-update-123 --json > results.jsonl
+          
+      - name: Check results
+        run: |
+          if jq -e 'select(.type=="error")' results.jsonl; then
+            echo "Playbook failed"
+            exit 1
+          fi
+          
+      - name: Commit changes
+        run: |
+          git config user.name "Maestro Bot"
+          git config user.email "bot@example.com"
+          git add docs/
+          git commit -m "Update documentation via Maestro"
+          git push
+```
+
+### Scheduled Tasks
+
+```bash crontab
+# Run daily documentation update at 2 AM
+0 2 * * * maestro-cli playbook daily-docs --wait --json >> /var/log/maestro.log 2>&1
+
+# Weekly cleanup
+0 0 * * 0 maestro-cli clean playbooks --json >> /var/log/maestro-clean.log 2>&1
+```
+
+### Batch Processing Script
+
+```bash batch-update.sh
+#!/bin/bash
+
+# Update multiple playbooks in sequence
+PLAYBOOKS=("docs-intro" "docs-guides" "docs-api")
+
+for playbook in "${PLAYBOOKS[@]}"; do
+  echo "Running $playbook..."
+  
+  if maestro-cli playbook "$playbook" --wait --json; then
+    echo "✓ $playbook completed"
+  else
+    echo "✗ $playbook failed"
+    exit 1
+  fi
+done
+
+echo "All playbooks completed successfully"
+```
+
+## Configuration
+
+### Config Directory
+
+CLI uses the same config as desktop:
+
+```bash
+# macOS
+~/Library/Application Support/maestro/
+
+# Linux
+~/.config/maestro/
+
+# Windows
+%APPDATA%\maestro\
+```
+
+### Storage Structure
+
+```
+maestro/
+├── maestro-sessions.json      # Agent configurations
+├── playbooks/
+│   ├── <agent-id>.json       # Playbooks per agent
+│   └── ...
+└── history/
+    └── ...                    # Command history
+```
+
+## Agent Detection
+
+CLI automatically detects installed agents:
+
+<CodeGroup>
+```bash Claude Code
+# Checks for claude-code in PATH
+which claude-code
+```
+
+```bash Codex
+# Checks for codex in PATH  
+which codex
+```
+
+```bash OpenCode
+# Checks for opencode in PATH
+which opencode
+```
+</CodeGroup>
+
+<Warning>
+  Ensure agent CLIs are in your PATH for CLI playbook execution.
+</Warning>
+
+## Debugging
+
+### Debug Mode
+
+```bash
+# Show detailed execution information
+maestro-cli playbook abc123 --debug
+
+# Debug output includes:
+- Agent detection results
+- Spawn configuration
+- Process environment
+- Error stack traces
+```
+
+### Verbose Mode
+
+```bash
+# Show full prompts sent to agents
+maestro-cli playbook abc123 --verbose
+
+# Shows:
+- Complete system prompts
+- Template variable substitutions  
+- Full document content
+```
+
+## Exit Codes
+
+| Code | Meaning |
+|------|--------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Agent not found |
+| 3 | Playbook not found |
+| 4 | Agent busy |
+| 5 | Agent CLI not installed |
+
+## Related Features
+
+- [Auto Run & Playbooks](/power/auto-run-playbooks) - Create and configure playbooks
+- [Git Worktrees](/power/git-worktrees) - Use worktrees with CLI playbooks  
+- [Agent Management](/features/agents) - Configure agents for CLI use

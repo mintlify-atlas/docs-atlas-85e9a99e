@@ -1,0 +1,452 @@
+---
+title: "OpenCode Integration"
+description: "Open-source AI coding assistant with multi-provider model support"
+icon: "terminal"
+---
+
+OpenCode is an open-source AI coding assistant supporting multiple model providers including Anthropic, OpenAI, and local models via Ollama.
+
+## Overview
+
+OpenCode (`opencode`) provides flexible AI coding with support for Claude, GPT, Gemini, and local Ollama models like Qwen3.
+
+<Info>
+OpenCode supports session resume, plan mode, image input, cost tracking, and works with both cloud and local models.
+</Info>
+
+## Installation
+
+<Steps>
+  <Step title="Install OpenCode">
+    Install via the official installer:
+    
+    <CodeGroup>
+    ```bash macOS/Linux
+    curl -fsSL https://install.opencode.ai | sh
+    ```
+    
+    ```bash npm
+    npm install -g opencode
+    ```
+    </CodeGroup>
+    
+    Default installation location: `~/.opencode/bin`
+  </Step>
+  
+  <Step title="Configure API Keys">
+    Set API keys for your chosen providers:
+    
+    ```bash
+    # Anthropic Claude
+    export ANTHROPIC_API_KEY=sk-ant-...
+    
+    # OpenAI
+    export OPENAI_API_KEY=sk-...
+    
+    # Or use local models (no API key needed)
+    ```
+  </Step>
+  
+  <Step title="Verify Installation">
+    Test OpenCode:
+    
+    ```bash
+    opencode --version
+    ```
+  </Step>
+</Steps>
+
+## Capabilities
+
+OpenCode provides comprehensive AI features:
+
+<ParamField path="supportsResume" type="boolean" default="true">
+  Resume sessions with `--session` flag
+</ParamField>
+
+<ParamField path="supportsReadOnlyMode" type="boolean" default="true">
+  Plan mode with `--agent plan`
+</ParamField>
+
+<ParamField path="supportsJsonOutput" type="boolean" default="true">
+  Structured JSON with `--format json`
+</ParamField>
+
+<ParamField path="supportsSessionId" type="boolean" default="true">
+  Session IDs in `sessionID` field (camelCase)
+</ParamField>
+
+<ParamField path="supportsImageInput" type="boolean" default="true">
+  Attach images with `-f, --file` flag
+</ParamField>
+
+<ParamField path="supportsImageInputOnResume" type="boolean" default="true">
+  Images work with `--session` flag
+</ParamField>
+
+<ParamField path="supportsSessionStorage" type="boolean" default="true">
+  Sessions in `~/.local/share/opencode/storage/` (JSON files)
+</ParamField>
+
+<ParamField path="supportsCostTracking" type="boolean" default="true">
+  Cost in USD from `part.cost` in `step_finish` events
+</ParamField>
+
+<ParamField path="supportsUsageStats" type="boolean" default="true">
+  Token counts in `part.tokens` from `step_finish` events
+</ParamField>
+
+<ParamField path="supportsModelSelection" type="boolean" default="true">
+  Select models with `--model provider/model`
+</ParamField>
+
+<ParamField path="supportsThinkingDisplay" type="boolean" default="true">
+  Streaming text chunks for reasoning
+</ParamField>
+
+<ParamField path="supportsContextMerge" type="boolean" default="true">
+  Receive merged context via prompts
+</ParamField>
+
+<ParamField path="supportsContextExport" type="boolean" default="true">
+  Export session context for transfer
+</ParamField>
+
+Source: `src/main/agents/capabilities.ts:262`
+
+## Command-Line Arguments
+
+Maestro uses the `run` subcommand for batch operations:
+
+```bash
+opencode run --format json [options] "prompt"
+```
+
+<ParamField path="run" type="subcommand">
+  Batch execution mode (required for Maestro)
+</ParamField>
+
+<ParamField path="--format" type="string" default="json">
+  Output format for structured parsing
+</ParamField>
+
+<Note>
+OpenCode doesn't use `--` separator before the prompt. The prompt is a positional argument.
+</Note>
+
+### Resume Mode
+
+Resume an existing session:
+
+```bash
+opencode run --format json --session {sessionId} "prompt"
+```
+
+<ParamField path="--session" type="string">
+  Session ID to resume
+</ParamField>
+
+### Plan Mode (Read-Only)
+
+For analysis without modifications:
+
+```bash
+opencode run --format json --agent plan "prompt"
+```
+
+<ParamField path="--agent" type="string" default="plan">
+  Agent type for execution (plan = read-only)
+</ParamField>
+
+### Model Selection
+
+Specify a model:
+
+```bash
+opencode run --format json --model ollama/qwen3:8b "prompt"
+```
+
+<ParamField path="--model" type="string">
+  Model in `provider/model` format
+  
+  Examples:
+  - `anthropic/claude-sonnet-4-20250514`
+  - `openai/gpt-4o`
+  - `ollama/qwen3:8b`
+</ParamField>
+
+### File/Image Input
+
+Attach a file or image:
+
+```bash
+opencode run --format json -f /path/to/image.png "prompt"
+```
+
+<ParamField path="-f, --file" type="string">
+  Path to file or image
+</ParamField>
+
+Source: `src/main/agents/definitions.ts:202`
+
+## Configuration
+
+Configure OpenCode in Maestro's agent settings:
+
+### Model Override
+
+<ParamField path="model" type="string" default="">
+  Model to use (empty = OpenCode's default)
+  
+  Format: `provider/model`
+  
+  Examples:
+  - `ollama/qwen3:8b`
+  - `anthropic/claude-sonnet-4-20250514`
+  - `openai/gpt-4o`
+</ParamField>
+
+### Context Window
+
+<ParamField path="contextWindow" type="number" default="128000">
+  Token limit for the selected model
+  
+  Varies by model (e.g., 400,000 for Claude/GPT-5.2)
+</ParamField>
+
+Source: `src/main/agents/definitions.ts:234`
+
+## Environment Variables
+
+OpenCode requires special environment configuration for batch mode:
+
+### YOLO Mode (Auto-approve)
+
+Maestro sets this by default to prevent permission prompts:
+
+```bash
+OPENCODE_CONFIG_CONTENT='{"permission":{"*":"allow","external_directory":"allow","question":"deny"},"tools":{"question":false}}'
+```
+
+<ParamField path="permission.*" type="string" default="allow">
+  Allow all permissions by default
+</ParamField>
+
+<ParamField path="permission.external_directory" type="string" default="allow">
+  Allow access to directories outside project
+</ParamField>
+
+<ParamField path="permission.question" type="string" default="deny">
+  Disable interactive questions (prevents stdin hangs)
+</ParamField>
+
+<ParamField path="tools.question" type="boolean" default="false">
+  Disable question tool (prevents stdin hangs)
+</ParamField>
+
+### Read-Only Mode Override
+
+In plan mode, Maestro strips blanket permissions:
+
+```bash
+OPENCODE_CONFIG_CONTENT='{"permission":{"question":"deny"},"tools":{"question":false}}'
+```
+
+Source: `src/main/agents/definitions.ts:224`
+
+## Session Storage
+
+OpenCode stores sessions as JSON files:
+
+```
+~/.local/share/opencode/storage/{session-id}.json
+```
+
+Each file contains:
+- Complete conversation history
+- Model configuration
+- Token usage and costs
+- File operations log
+
+Maestro can import and resume OpenCode sessions.
+
+Source: `src/main/storage/opencode-session-storage.ts`
+
+## Output Format
+
+OpenCode outputs newline-delimited JSON events:
+
+<CodeGroup>
+```json Step Start
+{
+  "event": "step_start",
+  "sessionID": "abc123",
+  "model": "ollama/qwen3:8b"
+}
+```
+
+```json Text Chunk
+{
+  "event": "text_chunk",
+  "text": "Let me analyze the code..."
+}
+```
+
+```json Tool Call
+{
+  "event": "tool_call",
+  "tool": "write_file",
+  "arguments": {
+    "path": "example.js",
+    "content": "console.log('Hello');"
+  }
+}
+```
+
+```json Step Finish
+{
+  "event": "step_finish",
+  "part": {
+    "reason": "stop",
+    "tokens": {
+      "input": 1500,
+      "output": 800
+    },
+    "cost": 0.0234
+  }
+}
+```
+</CodeGroup>
+
+Source: `src/main/parsers/opencode-parser.ts`
+
+## Supported Models
+
+OpenCode supports multiple providers:
+
+<AccordionGroup>
+  <Accordion title="Anthropic Claude">
+    - `anthropic/claude-sonnet-4-20250514`
+    - `anthropic/claude-opus-4`
+    - `anthropic/claude-haiku-4`
+  </Accordion>
+  
+  <Accordion title="OpenAI">
+    - `openai/gpt-4o`
+    - `openai/gpt-5.1`
+    - `openai/o3`
+  </Accordion>
+  
+  <Accordion title="Ollama (Local)">
+    - `ollama/qwen3:8b`
+    - `ollama/codellama:34b`
+    - `ollama/deepseek-coder:33b`
+  </Accordion>
+  
+  <Accordion title="Google Gemini">
+    - `google/gemini-2.0-flash`
+    - `google/gemini-pro`
+  </Accordion>
+</AccordionGroup>
+
+## Error Patterns
+
+Common errors Maestro detects:
+
+<ResponseField name="API_KEY_MISSING" type="error">
+  **Pattern**: `API key not found`
+  
+  **Solution**: Set appropriate API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.)
+</ResponseField>
+
+<ResponseField name="MODEL_NOT_FOUND" type="error">
+  **Pattern**: `model not found`
+  
+  **Solution**: Check model name format and availability
+</ResponseField>
+
+<ResponseField name="PERMISSION_DENIED" type="error">
+  **Pattern**: `permission denied`
+  
+  **Solution**: Check OPENCODE_CONFIG_CONTENT or file permissions
+</ResponseField>
+
+Source: `src/main/parsers/error-patterns.ts`
+
+## Usage with Maestro Features
+
+<CardGroup cols={2}>
+  <Card title="Auto Run" icon="play">
+    Full support for playbooks with multi-model flexibility
+  </Card>
+  
+  <Card title="Group Chat" icon="users">
+    Multi-agent collaboration with other providers
+  </Card>
+  
+  <Card title="Local Models" icon="server">
+    Use Ollama for offline/private coding assistance
+  </Card>
+  
+  <Card title="Context Grooming" icon="scissors">
+    Export and merge conversation context
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Steps>
+  <Step title="Choose Model Based on Task">
+    - Local models (Ollama) for privacy/offline
+    - Claude for complex reasoning
+    - GPT for general tasks
+  </Step>
+  
+  <Step title="Configure Context Window">
+    Set correct context window in agent settings to match your model
+  </Step>
+  
+  <Step title="Monitor Costs">
+    OpenCode tracks costs per request - review usage dashboard regularly
+  </Step>
+  
+  <Step title="Use Plan Mode">
+    Enable `--agent plan` for read-only analysis tasks
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="OpenCode not detected">
+    Verify installation:
+    ```bash
+    which opencode
+    opencode --version
+    ```
+    
+    Check default path:
+    ```bash
+    ls ~/.opencode/bin/opencode
+    ```
+  </Accordion>
+  
+  <Accordion title="Model not available">
+    For Ollama models, ensure Ollama is running:
+    ```bash
+    ollama list
+    ollama pull qwen3:8b
+    ```
+  </Accordion>
+  
+  <Accordion title="Permission prompts hang">
+    Verify OPENCODE_CONFIG_CONTENT is set correctly. Maestro should set this automatically.
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+- [OpenCode GitHub](https://github.com/opencode-ai/opencode)
+- [Ollama Models](https://ollama.ai/library)
+- [Agent Management](/core/agent-management)
+- [Auto Run Playbooks](/power/auto-run-playbooks)
