@@ -1,0 +1,278 @@
+---
+title: Quick Start
+description: Get up and running with Maestro in minutes and create your first AI agent
+---
+
+Get Maestro installed and create your first AI agent in under 5 minutes.
+
+## Prerequisites
+
+Before starting, ensure you have at least one AI coding assistant installed and authenticated:
+
+<CardGroup cols={2}>
+  <Card title="Claude Code" icon="brain" href="https://docs.anthropic.com/en/docs/claude-code">
+    Anthropic's AI coding assistant
+  </Card>
+  <Card title="OpenAI Codex" icon="robot" href="https://github.com/openai/codex">
+    OpenAI's coding agent
+  </Card>
+  <Card title="OpenCode" icon="code" href="https://github.com/sst/opencode">
+    Open-source AI assistant
+  </Card>
+  <Card title="Factory Droid" icon="industry" href="https://factorydroid.com">
+    Factory's AI development tool
+  </Card>
+</CardGroup>
+
+<Note>
+Maestro is a pass-through to your AI provider. Whatever MCP tools, skills, or permissions you have configured in your AI assistant work identically in Maestro.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Download Maestro">
+    Download the latest release for your platform:
+    
+    - **macOS**: `maestro-{version}-{arch}-mac.dmg` or `.zip`
+    - **Windows**: `Maestro-Setup-{version}-x64.exe` or portable `.exe`
+    - **Linux**: `maestro-{version}-{arch}.AppImage`, `.deb`, or `.rpm`
+    
+    Get the latest release from [GitHub Releases](https://github.com/RunMaestro/Maestro/releases).
+  </Step>
+
+  <Step title="Install and launch">
+    <Tabs>
+      <Tab title="macOS">
+        1. Open the `.dmg` file
+        2. Drag Maestro to Applications
+        3. Launch Maestro from Applications
+        4. If blocked by Gatekeeper, go to **System Settings → Privacy & Security** and click **Open Anyway**
+      </Tab>
+      
+      <Tab title="Windows">
+        1. Run the installer `.exe`
+        2. Follow the installation wizard
+        3. Launch Maestro from the Start Menu
+        
+        <Note>Windows Defender SmartScreen may block the installer. Click **More info** → **Run anyway** if needed.</Note>
+      </Tab>
+      
+      <Tab title="Linux">
+        **AppImage** (recommended):
+        ```bash
+        chmod +x maestro-*.AppImage
+        ./maestro-*.AppImage
+        ```
+        
+        **Debian/Ubuntu (.deb)**:
+        ```bash
+        sudo dpkg -i maestro-*.deb
+        maestro
+        ```
+        
+        **Fedora/RHEL (.rpm)**:
+        ```bash
+        sudo rpm -i maestro-*.rpm
+        maestro
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Complete onboarding">
+    On first launch, Maestro will:
+    - Detect your installed AI providers
+    - Offer an interactive tour of key features
+    - Help you create your first agent
+    
+    Take the tour—it's quick and shows you the keyboard shortcuts you'll use every day.
+  </Step>
+</Steps>
+
+## Create your first agent
+
+<Steps>
+  <Step title="Open the agent creation dialog">
+    Press `Cmd+N` (macOS) or `Ctrl+N` (Windows/Linux) to create a new agent.
+    
+    Or click the **+** button in the left sidebar.
+  </Step>
+
+  <Step title="Configure your agent">
+    Choose your settings:
+    
+    - **Agent Type**: Select Claude Code, Codex, OpenCode, or Factory Droid
+    - **Workspace**: Select a project directory (or leave empty for home directory)
+    - **Name**: Give your agent a meaningful name (optional—Maestro will auto-name it)
+    
+    <Tip>Choose a workspace directory that contains the code you want to work on. The AI will have access to files in this directory.</Tip>
+  </Step>
+
+  <Step title="Start chatting">
+    Your agent will appear in the left sidebar. The AI terminal is ready—just start typing!
+    
+    Try asking:
+    - "List the files in this directory"
+    - "Explain what this project does"
+    - "Add a new feature: [describe your feature]"
+  </Step>
+</Steps>
+
+## Essential keyboard shortcuts
+
+Master these shortcuts to work at full speed:
+
+### Navigation
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| **Quick Actions** (Command Palette) | `Cmd+K` | `Ctrl+K` |
+| **New Agent** | `Cmd+N` | `Ctrl+N` |
+| **Next Agent** | `Cmd+]` | `Ctrl+]` |
+| **Previous Agent** | `Cmd+[` | `Ctrl+[` |
+| **Toggle Sidebar** | `Cmd+B` | `Ctrl+B` |
+
+### Working with Agents
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| **Switch AI/Terminal Mode** | `Cmd+J` | `Ctrl+J` |
+| **New AI Tab** | `Cmd+T` | `Ctrl+T` |
+| **Search AI Output** | `Cmd+F` | `Ctrl+F` |
+| **Stop Agent** | `Cmd+C` | `Ctrl+C` |
+
+### Power Features
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| **Git Diff Viewer** | `Cmd+Shift+D` | `Ctrl+Shift+D` |
+| **Git Log** | `Cmd+Shift+G` | `Ctrl+Shift+G` |
+| **Session Browser** | `Cmd+Shift+L` | `Ctrl+Shift+L` |
+| **Usage Dashboard** | `Opt+Cmd+U` | `Alt+Ctrl+U` |
+
+<Tip>Press `Cmd+/` (macOS) or `Ctrl+/` (Windows/Linux) to see all keyboard shortcuts.</Tip>
+
+## Core workflows
+
+### Switching between AI and terminal
+
+Each agent has two modes:
+
+- **AI Terminal**: Chat with your AI assistant
+- **Command Terminal**: Run shell commands
+
+Press `Cmd+J` (or `Ctrl+J`) to switch between them instantly.
+
+**Use case**: Ask the AI to write code, then switch to terminal mode to run tests, all without leaving the agent.
+
+### Using the file explorer
+
+1. Click the **Files** tab in the right sidebar
+2. Browse your project files
+3. Click a file to preview it
+4. Use `@filename` in your AI prompt to reference files
+
+**Example prompt**:
+```
+@src/server.ts has a bug in the authentication middleware. Fix it.
+```
+
+### Working with multiple agents
+
+1. Create agents for different projects (`Cmd+N`)
+2. Switch between them with `Cmd+[` and `Cmd+]`
+3. Use **Quick Actions** (`Cmd+K`) to jump to a specific agent by name
+
+**Use case**: Monitor multiple projects at once. One agent can run tests while you work with another on a different feature.
+
+## Try Auto Run
+
+Auto Run lets you batch-process tasks through AI agents using markdown checklists.
+
+<Steps>
+  <Step title="Create a task list">
+    In your workspace, create a file called `tasks.md`:
+    
+    ```markdown
+    # My First Auto Run
+    
+    - [ ] Create a README.md file
+    - [ ] Add a .gitignore file
+    - [ ] Write a hello world script in Python
+    ```
+  </Step>
+
+  <Step title="Enable Auto Run">
+    1. Open the **Auto Run** tab in the right sidebar
+    2. Click **Browse** and select your `tasks.md` file
+    3. Click **Start**
+  </Step>
+
+  <Step title="Watch it run">
+    Maestro will:
+    - Process each task in a separate AI session
+    - Check off completed tasks
+    - Show progress in real-time
+    - Notify you when done
+    
+    Each task gets fresh context, so the AI stays focused.
+  </Step>
+</Steps>
+
+<Note>
+Auto Run works best with atomic tasks (30-60 minutes each). Break large tasks into smaller steps for better results.
+</Note>
+
+## Customize Maestro
+
+### Settings
+
+Press `Cmd+,` (macOS) or `Ctrl+,` (Windows/Linux) to open settings.
+
+Key settings to explore:
+
+- **Enter to Send**: Send messages with Enter (vs Shift+Enter for new line)
+- **Auto-scroll**: Keep AI output scrolled to bottom
+- **Notifications**: Enable sound and speech when agents finish
+- **Cost Tracking**: Configure per-provider pricing
+
+### Themes
+
+Maestro includes 17 built-in themes:
+
+1. Open **Settings** → **Appearance** → **Theme**
+2. Choose from Dracula, Monokai, Nord, Tokyo Night, Solarized, and more
+3. Theme applies instantly
+
+Or use **Quick Actions** (`Cmd+K`) and search for "Change Theme".
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Git Worktrees" icon="code-branch" href="/power/git-worktrees">
+    Run agents in parallel on isolated branches
+  </Card>
+  <Card title="Auto Run & Playbooks" icon="play" href="/power/auto-run-playbooks">
+    Automate complex workflows with reusable playbooks
+  </Card>
+  <Card title="Group Chat" icon="comments" href="/power/group-chat">
+    Coordinate multiple agents in a single conversation
+  </Card>
+  <Card title="Remote Access" icon="mobile" href="/power/mobile-remote">
+    Control Maestro from your phone
+  </Card>
+  <Card title="CLI Tool" icon="terminal" href="/cli/overview">
+    Automate with the command-line interface
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/core/keyboard-shortcuts">
+    Master all keyboard shortcuts
+  </Card>
+</CardGroup>
+
+## Get help
+
+- **Documentation**: Browse these docs for detailed guides
+- **Discord**: [Join the community](https://runmaestro.ai/discord) for help and discussion
+- **GitHub Issues**: [Report bugs](https://github.com/RunMaestro/Maestro/issues) or request features
+- **Video Walkthrough**: [27-minute demo](https://youtu.be/fmwwTOg7cyA) on YouTube
