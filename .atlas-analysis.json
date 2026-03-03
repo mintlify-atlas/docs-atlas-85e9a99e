@@ -1,0 +1,177 @@
+{
+  "projectType": "saas",
+  "projectName": "Maestro",
+  "projectDescription": "Cross-platform desktop app for orchestrating AI agents with keyboard-first design and parallel execution.",
+  "theme": "aspen",
+  "primaryColor": "#9b59b6",
+  "lightColor": "#e8daef",
+  "darkColor": "#6c3483",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart",
+              "features-overview"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "core/agent-management",
+              "core/dual-mode-sessions",
+              "core/keyboard-shortcuts",
+              "core/session-discovery",
+              "core/git-integration",
+              "core/file-explorer",
+              "core/output-filtering"
+            ]
+          },
+          {
+            "group": "Power Features",
+            "pages": [
+              "power/git-worktrees",
+              "power/auto-run-playbooks",
+              "power/group-chat",
+              "power/mobile-remote",
+              "power/cli-tool",
+              "power/message-queueing"
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "analytics/usage-dashboard",
+              "analytics/document-graph"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Usage Guides",
+            "pages": [
+              "guides/general-usage",
+              "guides/context-management",
+              "guides/slash-commands",
+              "guides/ssh-remote-execution",
+              "guides/configuration",
+              "guides/themes"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "guides/playbook-creation",
+              "guides/custom-commands",
+              "guides/multi-provider-setup",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/overview",
+              "cli/commands",
+              "cli/automation",
+              "cli/scripting"
+            ]
+          },
+          {
+            "group": "Playbooks",
+            "pages": [
+              "cli/speckit-commands",
+              "cli/openspec-commands",
+              "cli/playbook-exchange"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API & Integration",
+        "groups": [
+          {
+            "group": "Integrations",
+            "pages": [
+              "api/mcp-server",
+              "api/web-server",
+              "api/tunnel-manager"
+            ]
+          },
+          {
+            "group": "Supported Providers",
+            "pages": [
+              "api/claude-code",
+              "api/openai-codex",
+              "api/opencode",
+              "api/factory-droid"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/architecture",
+              "reference/keyboard-shortcuts-full",
+              "reference/achievements",
+              "reference/performance-profiling",
+              "reference/changelog"
+            ]
+          },
+          {
+            "group": "Community",
+            "pages": [
+              "reference/contributing",
+              "reference/security",
+              "reference/support"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-agent orchestration with parallel execution",
+    "Git Worktrees for isolated branch development",
+    "Auto Run & Playbooks for batch task processing",
+    "Group Chat for multi-agent coordination",
+    "Mobile Remote Control with QR code access",
+    "Full CLI for headless operation",
+    "Keyboard-first design with mastery tracking",
+    "Session discovery and import from all providers",
+    "Built-in git integration and diff viewer",
+    "Usage Dashboard with comprehensive analytics",
+    "Document Graph for knowledge visualization",
+    "Cost tracking per session and globally"
+  ],
+  "publicApiSurface": [
+    "maestro-cli list groups",
+    "maestro-cli list agents",
+    "maestro-cli list playbooks",
+    "maestro-cli run-playbook",
+    "maestro-cli send",
+    "maestro-cli show-agent",
+    "MCP Server: SearchMaestro tool",
+    "Web Server HTTP/WebSocket API",
+    "Cloudflare Tunnel Manager",
+    "IPC API: window.maestro.*",
+    "Agent Session Storage API",
+    "Process Manager PTY API"
+  ]
+}
